@@ -71,6 +71,71 @@ export default {
             .setDescription('Hráč')
             .setRequired(true)
         )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('addxp')
+        .setDescription('Přidej hráči XP')
+        .addUserOption(option =>
+          option.setName('user')
+            .setDescription('Hráč')
+            .setRequired(true)
+        )
+        .addIntegerOption(option =>
+          option.setName('amount')
+            .setDescription('Počet XP')
+            .setRequired(true)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('setpickaxe')
+        .setDescription('Nastav hráči krumpáč')
+        .addUserOption(option =>
+          option.setName('user')
+            .setDescription('Hráč')
+            .setRequired(true)
+        )
+        .addStringOption(option =>
+          option.setName('pickaxe')
+            .setDescription('Typ krumpáče')
+            .setRequired(true)
+            .addChoices(
+              { name: '🪵 Dřevěný', value: 'wooden' },
+              { name: '⚙️ Železný', value: 'iron' },
+              { name: '💎 Diamantový', value: 'diamond' }
+            )
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('addores')
+        .setDescription('Přidej hráči kovy')
+        .addUserOption(option =>
+          option.setName('user')
+            .setDescription('Hráč')
+            .setRequired(true)
+        )
+        .addIntegerOption(option =>
+          option.setName('iron')
+            .setDescription('Železo')
+            .setRequired(false)
+        )
+        .addIntegerOption(option =>
+          option.setName('copper')
+            .setDescription('Měď')
+            .setRequired(false)
+        )
+        .addIntegerOption(option =>
+          option.setName('gold')
+            .setDescription('Zlato')
+            .setRequired(false)
+        )
+        .addIntegerOption(option =>
+          option.setName('diamond')
+            .setDescription('Diamant')
+            .setRequired(false)
+        )
     ),
   
   async execute(interaction, db) {
@@ -133,10 +198,18 @@ export default {
         }
 
         case 'removemoney': {
-          // Pouze admin může odebírat peníze
-          if (!isAdmin) {
+          // Admin nebo moderátor může odebírat peníze
+          if (!isAdmin && !isModerator) {
             return interaction.reply({
-              content: '❌ Pouze admin může odebírat peníze!',
+              content: '❌ Nemáš oprávnění odebírat peníze!',
+              ephemeral: true
+            });
+          }
+
+          // Moderátor nemůže odebrat peníze adminovi
+          if (isModerator && !isAdmin && ADMIN_USER_IDS.includes(targetUser.id)) {
+            return interaction.reply({
+              content: '❌ Moderátor nemůže odebrat peníze adminovi!',
               ephemeral: true
             });
           }
@@ -148,7 +221,7 @@ export default {
           const embed = new EmbedBuilder()
             .setColor(0xE74C3C)
             .setTitle('🚨 Pokuta')
-            .setDescription(`Admin **${interaction.user.username}** udělil pokutu`)
+            .setDescription(`${isAdmin ? 'Admin' : 'Moderátor'} **${interaction.user.username}** udělil pokutu`)
             .addFields(
               { name: 'Hráč', value: targetUser.username, inline: true },
               { name: 'Pokuta', value: `-${amount} Kč`, inline: true },
@@ -220,6 +293,141 @@ export default {
             .setTimestamp();
 
           await interaction.reply({ embeds: [embed], ephemeral: true });
+          break;
+        }
+
+        case 'addxp': {
+          // Pouze admin může přidávat XP
+          if (!isAdmin) {
+            return interaction.reply({
+              content: '❌ Pouze admin může přidávat XP!',
+              ephemeral: true
+            });
+          }
+
+          if (!user) {
+            return interaction.reply({
+              content: `❌ ${targetUser.username} ještě nemá postavu!`,
+              ephemeral: true
+            });
+          }
+
+          let newXP = user.xp + amount;
+          let newLevel = user.level;
+
+          // Level up pokud má přes 100 XP
+          while (newXP >= 100) {
+            newXP -= 100;
+            newLevel += 1;
+          }
+
+          await db.query('UPDATE users SET xp = $1, level = $2 WHERE id = $3', [newXP, newLevel, targetUser.id]);
+
+          const embed = new EmbedBuilder()
+            .setColor(0x9B59B6)
+            .setTitle('✨ XP přidány')
+            .setDescription(`Admin **${interaction.user.username}** přidal XP`)
+            .addFields(
+              { name: 'Hráč', value: targetUser.username, inline: true },
+              { name: 'XP', value: `+${amount} XP`, inline: true },
+              { name: 'Level', value: `${user.level} → ${newLevel}`, inline: true },
+              { name: 'Nové XP', value: `${newXP}/100`, inline: true }
+            )
+            .setTimestamp();
+
+          await interaction.reply({ embeds: [embed] });
+          break;
+        }
+
+        case 'setpickaxe': {
+          // Pouze admin může nastavovat krumpáče
+          if (!isAdmin) {
+            return interaction.reply({
+              content: '❌ Pouze admin může nastavovat krumpáče!',
+              ephemeral: true
+            });
+          }
+
+          if (!user) {
+            return interaction.reply({
+              content: `❌ ${targetUser.username} ještě nemá postavu!`,
+              ephemeral: true
+            });
+          }
+
+          const pickaxeType = interaction.options.getString('pickaxe');
+          const pickaxeNames = {
+            wooden: '🪵 Dřevěný krumpáč',
+            iron: '⚙️ Železný krumpáč',
+            diamond: '💎 Diamantový krumpáč'
+          };
+
+          await db.query('UPDATE users SET pickaxe = $1 WHERE id = $2', [pickaxeType, targetUser.id]);
+
+          const embed = new EmbedBuilder()
+            .setColor(0xE67E22)
+            .setTitle('⛏️ Krumpáč nastaven')
+            .setDescription(`Admin **${interaction.user.username}** nastavil krumpáč`)
+            .addFields(
+              { name: 'Hráč', value: targetUser.username, inline: true },
+              { name: 'Krumpáč', value: pickaxeNames[pickaxeType], inline: true }
+            )
+            .setTimestamp();
+
+          await interaction.reply({ embeds: [embed] });
+          break;
+        }
+
+        case 'addores': {
+          // Pouze admin může přidávat kovy
+          if (!isAdmin) {
+            return interaction.reply({
+              content: '❌ Pouze admin může přidávat kovy!',
+              ephemeral: true
+            });
+          }
+
+          if (!user) {
+            return interaction.reply({
+              content: `❌ ${targetUser.username} ještě nemá postavu!`,
+              ephemeral: true
+            });
+          }
+
+          const iron = interaction.options.getInteger('iron') || 0;
+          const copper = interaction.options.getInteger('copper') || 0;
+          const gold = interaction.options.getInteger('gold') || 0;
+          const diamond = interaction.options.getInteger('diamond') || 0;
+
+          if (iron === 0 && copper === 0 && gold === 0 && diamond === 0) {
+            return interaction.reply({
+              content: '❌ Musíš zadat alespoň jeden kov!',
+              ephemeral: true
+            });
+          }
+
+          await db.query(
+            'UPDATE users SET iron = iron + $1, copper = copper + $2, gold = gold + $3, diamond = diamond + $4 WHERE id = $5',
+            [iron, copper, gold, diamond, targetUser.id]
+          );
+
+          let oresText = [];
+          if (iron > 0) oresText.push(`⚙️ Železo: +${iron}x`);
+          if (copper > 0) oresText.push(`🔶 Měď: +${copper}x`);
+          if (gold > 0) oresText.push(`🟡 Zlato: +${gold}x`);
+          if (diamond > 0) oresText.push(`💎 Diamant: +${diamond}x`);
+
+          const embed = new EmbedBuilder()
+            .setColor(0x1ABC9C)
+            .setTitle('⛏️ Kovy přidány')
+            .setDescription(`Admin **${interaction.user.username}** přidal kovy`)
+            .addFields(
+              { name: 'Hráč', value: targetUser.username, inline: true },
+              { name: 'Kovy', value: oresText.join('\n'), inline: false }
+            )
+            .setTimestamp();
+
+          await interaction.reply({ embeds: [embed] });
           break;
         }
       }
