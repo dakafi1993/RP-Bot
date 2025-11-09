@@ -72,9 +72,12 @@ export default {
     try {
       // Kontrola admin User ID
       const userId = interaction.user.id;
+      
+      console.log(`Admin check: User ID = ${userId}, Allowed IDs = ${ADMIN_USER_IDS.join(', ')}`);
+      
       if (!ADMIN_USER_IDS.includes(userId)) {
         return interaction.reply({
-          content: '❌ Nemáš oprávnění používat admin příkazy!',
+          content: `❌ Nemáš oprávnění používat admin příkazy!\nTvoje ID: ${userId}`,
           ephemeral: true
         });
       }
