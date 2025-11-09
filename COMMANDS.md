@@ -1,14 +1,25 @@
 # 📋 Všechny příkazy RP Bota
 
 ## 💰 Ekonomika
-- `/create` - Vytvoř si postavu (jen jednou)
-- `/profile` - Zobraz svůj profil (peníze, XP, level, statistiky)
+- `/create` - Vytvoř si postavu (jen jednou) - vyber jméno a rasu!
+- `/profile` - Zobraz svůj profil (peníze, XP, level, statistiky, rasa)
 - `/daily` - Denní odměna 500 Kč (jednou za 24h)
 - `/leaderboard` - Top 10 nejlepších hráčů
 
+## 🎭 Rasy & Bonusy
+Při vytváření postavy vyber rasu:
+- 👤 **Human** - Vyvážená rasa bez bonusů
+- 🧝 **Elf** - +20% výdělek z `/work`
+- 🧙 **Mage** - +50% XP ze všech aktivit
+- ⚔️ **Warrior** - +30% úspěšnost u `/crime`
+- 🗡️ **Thief** - +20% úspěšnost u `/rob` (60% → 80%)
+
 ## 💼 Výdělek
 - `/work` - Pracuj za peníze (50-300 Kč + XP)
-- `/crime` - Spáchej zločin (vysoké riziko/odměna, 50% úspěch)
+  - 🧝 Elf: +20% bonus na výdělek
+  - 🧙 Mage: +50% XP bonus
+- `/crime` - Spáchej zločin (vysoké riziko/odměna)
+  - ⚔️ Warrior: +30% na úspěšnost (50% → 80%)
 
 ## 🎰 Hazardní hry (Animované)
 - `/gamble amount:[částka]` - Ruleta v kasinu (min 50 Kč)
@@ -39,8 +50,10 @@
 
 ## 🎭 PvP
 - `/rob @uživatel` - Pokus okrást jiného hráče
-  - 60% úspěch → ukradneš 10-40% peněz
+  - 60% základní úspěšnost → ukradneš 10-40% peněz
   - 40% fail → pokuta 20% tvých peněz
+  - 🗡️ Thief: +20% úspěšnost (60% → 80%)
+  - 🛡️ Rob Protection blokuje okradení
 
 ## 🏪 Obchod
 - `/shop` - Zobraz obchod
