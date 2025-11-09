@@ -22,10 +22,11 @@ Při vytváření postavy vyber rasu:
   - ⚔️ Warrior: +30% na úspěšnost (50% → 80%)
 
 ## 🎰 Hazardní hry (Animované)
-- `/gamble amount:[částka]` - Ruleta v kasinu (min 50 Kč)
-  - 45% prohra
-  - 45% výhra 2x
-  - 10% jackpot 5x
+- `/gamble amount:[částka] type:[barva]` - Ruleta v kasinu (min 50 Kč)
+  - 🔴 Červená (2x) - čísla 1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36
+  - ⚫ Černá (2x) - čísla 2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35
+  - 🟢 Zelená/0 (36x)
+  - 🎯 Volitelně: `number:[0-36]` - sázka na konkrétní číslo (36x)
 
 - `/slots bet:[částka]` - Slot machine s animací (min 50 Kč)
   - 💎💎💎 = 50x jackpot
