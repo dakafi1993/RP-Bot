@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -18,12 +18,23 @@ export default {
         });
       }
 
+      // Animace zločinu
+      const planning = new EmbedBuilder()
+        .setColor(0xE67E22)
+        .setTitle('🎭 Kriminální akce')
+        .setDescription('```\n🔍 Plánuješ zločin...\n```')
+        .setTimestamp();
+
+      const msg = await interaction.reply({ embeds: [planning], fetchReply: true, ephemeral: false });
+
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       const crimes = [
-        { name: 'Vykradl jsi bankomat', success: 0.5, reward: [300, 800] },
-        { name: 'Ukradl jsi auto', success: 0.6, reward: [500, 1200] },
-        { name: 'Vykradl jsi obchod', success: 0.7, reward: [200, 500] },
-        { name: 'Prodal jsi padělané hodinky', success: 0.8, reward: [100, 300] },
-        { name: 'Vykradl jsi dům', success: 0.4, reward: [800, 2000] }
+        { name: 'Vykradl jsi bankomat', success: 0.5, reward: [300, 800], emoji: '🏧' },
+        { name: 'Ukradl jsi auto', success: 0.6, reward: [500, 1200], emoji: '🚗' },
+        { name: 'Vykradl jsi obchod', success: 0.7, reward: [200, 500], emoji: '🏪' },
+        { name: 'Prodal jsi padělané hodinky', success: 0.8, reward: [100, 300], emoji: '⌚' },
+        { name: 'Vykradl jsi dům', success: 0.4, reward: [800, 2000], emoji: '🏠' }
       ];
 
       const crime = crimes[Math.floor(Math.random() * crimes.length)];
@@ -47,23 +58,39 @@ export default {
         db.prepare('UPDATE users SET money = ?, xp = ?, level = ? WHERE id = ?')
           .run(newMoney, newXp, newLevel, userId);
 
-        let response = `🎭 **${crime.name}!**\n✅ Vydělal jsi **${earned} Kč** a **${xpEarned} XP**!`;
+        const embed = new EmbedBuilder()
+          .setColor(0x2ECC71)
+          .setTitle(`${crime.emoji} Úspěch!`)
+          .setDescription(`**${crime.name}!**`)
+          .addFields(
+            { name: '💰 Zisk', value: `${earned} Kč`, inline: true },
+            { name: '⭐ XP', value: `+${xpEarned} XP`, inline: true },
+            { name: '💳 Zůstatek', value: `${newMoney} Kč`, inline: true }
+          )
+          .setTimestamp();
         
         if (leveledUp) {
-          response += `\n\n🎉 **LEVEL UP!** Nyní jsi level **${newLevel}**!`;
+          embed.addFields({ name: '🎉 LEVEL UP!', value: `Nyní jsi level **${newLevel}**!`, inline: false });
         }
 
-        return interaction.reply({ content: response, ephemeral: false });
+        await msg.edit({ embeds: [embed] });
       } else {
         const fine = Math.floor(user.money * 0.3);
         const newMoney = Math.max(0, user.money - fine);
 
         db.prepare('UPDATE users SET money = ? WHERE id = ?').run(newMoney, userId);
 
-        return interaction.reply({
-          content: `🚨 **Pokus o zločin!**\n❌ Chytila tě policie! Platíš pokutu **${fine} Kč**.`,
-          ephemeral: false
-        });
+        const embed = new EmbedBuilder()
+          .setColor(0xE74C3C)
+          .setTitle('🚨 Chycen!')
+          .setDescription(`**Pokus o: ${crime.name}**\n\nChytila tě policie!`)
+          .addFields(
+            { name: '💸 Pokuta', value: `${fine} Kč`, inline: true },
+            { name: '💳 Zůstatek', value: `${newMoney} Kč`, inline: true }
+          )
+          .setTimestamp();
+
+        await msg.edit({ embeds: [embed] });
       }
     } catch (error) {
       console.error('Crime command error:', error);

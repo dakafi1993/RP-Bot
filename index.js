@@ -99,6 +99,17 @@ client.on('interactionCreate', async interaction => {
         }
       }
     }
+    // Button handler pro crash
+    else if (interaction.customId.startsWith('crash_')) {
+      const crashCommand = client.commands.get('crash');
+      if (crashCommand && crashCommand.handleCrashButton) {
+        try {
+          await crashCommand.handleCrashButton(interaction);
+        } catch (error) {
+          console.error('Button error:', error);
+        }
+      }
+    }
   }
 });
 

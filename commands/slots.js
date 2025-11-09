@@ -34,8 +34,38 @@ export default {
 
       const symbols = ['🍒', '🍋', '🍊', '🍇', '💎', '7️⃣'];
       
+      // Animace točení
+      const spinning = new EmbedBuilder()
+        .setColor(0xFFD700)
+        .setTitle('🎰 Slot Machine')
+        .setDescription('```\n🔄 🔄 🔄\n```\n⏳ Točím...')
+        .setTimestamp();
+
+      const msg = await interaction.reply({ embeds: [spinning], fetchReply: true, ephemeral: false });
+
+      // Simulace točení - 3 fáze
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       const reel1 = symbols[Math.floor(Math.random() * symbols.length)];
+      const spin1 = new EmbedBuilder()
+        .setColor(0xFFD700)
+        .setTitle('🎰 Slot Machine')
+        .setDescription(`\`\`\`\n${reel1} 🔄 🔄\n\`\`\`\n⏳ Točím...`)
+        .setTimestamp();
+      await msg.edit({ embeds: [spin1] });
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       const reel2 = symbols[Math.floor(Math.random() * symbols.length)];
+      const spin2 = new EmbedBuilder()
+        .setColor(0xFFD700)
+        .setTitle('🎰 Slot Machine')
+        .setDescription(`\`\`\`\n${reel1} ${reel2} 🔄\n\`\`\`\n⏳ Točím...`)
+        .setTimestamp();
+      await msg.edit({ embeds: [spin2] });
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       const reel3 = symbols[Math.floor(Math.random() * symbols.length)];
 
       let multiplier = 0;
@@ -43,7 +73,6 @@ export default {
 
       // Kontrola výhry
       if (reel1 === reel2 && reel2 === reel3) {
-        // Všechny 3 stejné
         if (reel1 === '💎') {
           multiplier = 50;
           resultText = '💎💎💎 **MEGA JACKPOT!!!**';
@@ -55,11 +84,9 @@ export default {
           resultText = '🎉 **Tři stejné!**';
         }
       } else if (reel1 === reel2 || reel2 === reel3 || reel1 === reel3) {
-        // Dva stejné
         multiplier = 2;
         resultText = '✨ **Dva stejné!**';
       } else {
-        // Prohra
         resultText = '❌ **Prohra**';
       }
 
@@ -72,7 +99,7 @@ export default {
           .run(newMoney, userId);
 
         const embed = new EmbedBuilder()
-          .setColor(0xFFD700)
+          .setColor(0x2ECC71)
           .setTitle('🎰 Slot Machine')
           .setDescription(`\`\`\`\n${reel1} ${reel2} ${reel3}\n\`\`\`\n${resultText}`)
           .addFields(
@@ -81,7 +108,7 @@ export default {
           )
           .setTimestamp();
 
-        return interaction.reply({ embeds: [embed], ephemeral: false });
+        await msg.edit({ embeds: [embed] });
       } else {
         newMoney -= bet;
         db.prepare('UPDATE users SET money = ?, losses = losses + 1 WHERE id = ?')
@@ -97,7 +124,7 @@ export default {
           )
           .setTimestamp();
 
-        return interaction.reply({ embeds: [embed], ephemeral: false });
+        await msg.edit({ embeds: [embed] });
       }
     } catch (error) {
       console.error('Slots command error:', error);

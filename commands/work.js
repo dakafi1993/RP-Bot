@@ -18,13 +18,24 @@ export default {
         });
       }
 
+      // Animace práce
+      const working = new EmbedBuilder()
+        .setColor(0x3498DB)
+        .setTitle('💼 Práce')
+        .setDescription('```\n⏳ Pracuješ...\n```')
+        .setTimestamp();
+
+      const msg = await interaction.reply({ embeds: [working], fetchReply: true, ephemeral: false });
+
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       const jobs = [
-        { name: 'Pracoval jsi jako programátor', pay: [150, 300] },
-        { name: 'Dělal jsi doručovatele pizzy', pay: [80, 150] },
-        { name: 'Úklid v kanceláři', pay: [50, 120] },
-        { name: 'Hlídal jsi děti', pay: [100, 200] },
-        { name: 'Pracoval jsi na stavbě', pay: [120, 250] },
-        { name: 'Servíroval jsi v restauraci', pay: [90, 180] }
+        { name: 'Pracoval jsi jako programátor', pay: [150, 300], emoji: '💻' },
+        { name: 'Dělal jsi doručovatele pizzy', pay: [80, 150], emoji: '🍕' },
+        { name: 'Úklid v kanceláři', pay: [50, 120], emoji: '🧹' },
+        { name: 'Hlídal jsi děti', pay: [100, 200], emoji: '👶' },
+        { name: 'Pracoval jsi na stavbě', pay: [120, 250], emoji: '🏗️' },
+        { name: 'Servíroval jsi v restauraci', pay: [90, 180], emoji: '🍽️' }
       ];
 
       const job = jobs[Math.floor(Math.random() * jobs.length)];
@@ -53,20 +64,26 @@ export default {
       db.prepare('UPDATE users SET money = ?, xp = ?, level = ? WHERE id = ?')
         .run(newMoney, newXp, newLevel, userId);
 
-      let response = `💼 **${job.name}**\nVydělal jsi **${moneyEarned} Kč** a **${xpEarned} XP**!`;
+      const embed = new EmbedBuilder()
+        .setColor(0x2ECC71)
+        .setTitle(`${job.emoji} Práce`)
+        .setDescription(`**${job.name}**`)
+        .addFields(
+          { name: '💰 Výdělek', value: `${moneyEarned} Kč`, inline: true },
+          { name: '⭐ XP', value: `+${xpEarned} XP`, inline: true },
+          { name: '💳 Zůstatek', value: `${newMoney} Kč`, inline: true }
+        )
+        .setTimestamp();
       
       if (boostActive) {
-        response += ` 🔧`;
+        embed.setFooter({ text: '🔧 Work Boost aktivní (2x výdělek)' });
       }
       
       if (leveledUp) {
-        response += `\n\n🎉 **LEVEL UP!** Nyní jsi level **${newLevel}**!`;
+        embed.addFields({ name: '🎉 LEVEL UP!', value: `Nyní jsi level **${newLevel}**!`, inline: false });
       }
 
-      await interaction.reply({
-        content: response,
-        ephemeral: false
-      });
+      await msg.edit({ embeds: [embed] });
     } catch (error) {
       console.error('Work command error:', error);
       throw error;

@@ -44,7 +44,22 @@ export default {
         });
       }
 
-      // Hod mincí
+      const choiceEmoji = choice === 'heads' ? '👑' : '🦅';
+      const choiceText = choice === 'heads' ? 'Hlava' : 'Orel';
+
+      // Animace hodu mincí
+      const flipping = new EmbedBuilder()
+        .setColor(0xFFD700)
+        .setTitle('🪙 Coinflip')
+        .setDescription('```\n🔄 Házím mincí...\n```')
+        .addFields({ name: 'Tvá volba', value: `${choiceEmoji} ${choiceText}`, inline: true })
+        .setTimestamp();
+
+      const msg = await interaction.reply({ embeds: [flipping], fetchReply: true, ephemeral: false });
+
+      // Simulace točení
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       const result = Math.random() < 0.5 ? 'heads' : 'tails';
       const won = result === choice;
 
@@ -61,14 +76,15 @@ export default {
         const embed = new EmbedBuilder()
           .setColor(0x2ECC71)
           .setTitle('🪙 Coinflip - VÝHRA!')
-          .setDescription(`Padlo: **${resultEmoji} ${resultText}**`)
+          .setDescription(`\`\`\`\n   ${resultEmoji}\n\`\`\`\nPadlo: **${resultText}**`)
           .addFields(
+            { name: 'Tvá volba', value: `${choiceEmoji} ${choiceText}`, inline: true },
             { name: '💰 Výhra', value: `+${bet} Kč`, inline: true },
-            { name: '💳 Nový zůstatek', value: `${newMoney} Kč`, inline: true }
+            { name: '💳 Zůstatek', value: `${newMoney} Kč`, inline: true }
           )
           .setTimestamp();
 
-        return interaction.reply({ embeds: [embed], ephemeral: false });
+        await msg.edit({ embeds: [embed] });
       } else {
         newMoney -= bet;
         db.prepare('UPDATE users SET money = ?, losses = losses + 1 WHERE id = ?')
@@ -77,14 +93,15 @@ export default {
         const embed = new EmbedBuilder()
           .setColor(0xE74C3C)
           .setTitle('🪙 Coinflip - Prohra')
-          .setDescription(`Padlo: **${resultEmoji} ${resultText}**`)
+          .setDescription(`\`\`\`\n   ${resultEmoji}\n\`\`\`\nPadlo: **${resultText}**`)
           .addFields(
+            { name: 'Tvá volba', value: `${choiceEmoji} ${choiceText}`, inline: true },
             { name: '💸 Ztráta', value: `-${bet} Kč`, inline: true },
-            { name: '💳 Nový zůstatek', value: `${newMoney} Kč`, inline: true }
+            { name: '💳 Zůstatek', value: `${newMoney} Kč`, inline: true }
           )
           .setTimestamp();
 
-        return interaction.reply({ embeds: [embed], ephemeral: false });
+        await msg.edit({ embeds: [embed] });
       }
     } catch (error) {
       console.error('Coinflip command error:', error);
