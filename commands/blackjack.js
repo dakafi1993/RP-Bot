@@ -18,7 +18,8 @@ export default {
     const bet = interaction.options.getInteger('bet');
 
     try {
-      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+      const userResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+      const user = userResult.rows[0];
 
       if (!user) {
         return interaction.reply({ 
@@ -220,17 +221,16 @@ async function endGame(interaction, game, action) {
   }
 
   // Update database
-  const user = game.db.prepare('SELECT * FROM users WHERE id = ?').get(game.userId);
+  const userResult = await game.db.query('SELECT * FROM users WHERE id = $1', [game.userId]);
+  const user = userResult.rows[0];
   let newMoney = user.money;
 
   if (won === true) {
     newMoney += game.bet;
-    game.db.prepare('UPDATE users SET money = ?, wins = wins + 1 WHERE id = ?')
-      .run(newMoney, game.userId);
+    await game.db.query('UPDATE users SET money = $1, wins = wins + 1 WHERE id = $2', [newMoney, game.userId]);
   } else if (won === false) {
     newMoney -= game.bet;
-    game.db.prepare('UPDATE users SET money = ?, losses = losses + 1 WHERE id = ?')
-      .run(newMoney, game.userId);
+    await game.db.query('UPDATE users SET money = $1, losses = losses + 1 WHERE id = $2', [newMoney, game.userId]);
   }
 
   const embed = createGameEmbed(game, true);

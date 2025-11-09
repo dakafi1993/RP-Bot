@@ -9,7 +9,8 @@ export default {
     const userId = interaction.user.id;
 
     try {
-      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+      const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+      const user = result.rows[0];
 
       if (!user) {
         return interaction.reply({ 
@@ -36,16 +37,25 @@ export default {
         if (user.level >= r.level) rank = r;
       }
 
+      // Rasové info
+      const raceInfo = {
+        human: '👤 Člověk',
+        elf: '🧝 Elf',
+        mage: '🧙 Mág',
+        warrior: '⚔️ Válečník',
+        thief: '🦹 Zloděj'
+      };
+
       const embed = new EmbedBuilder()
         .setColor(rank.color)
         .setTitle(`${rank.name}`)
-        .setAuthor({ name: `${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+        .setAuthor({ name: `${user.name || interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
         .setThumbnail(interaction.user.displayAvatarURL())
         .addFields(
+          { name: '🎭 Rasa', value: raceInfo[user.race] || '👤 Člověk', inline: true },
           { name: '💰 Peníze', value: `${user.money} Kč`, inline: true },
           { name: '⭐ Level', value: `${user.level}`, inline: true },
           { name: '📊 XP', value: `${user.xp}/100`, inline: true },
-          { name: '\u200B', value: '\u200B', inline: false },
           { name: '🎮 Výhry', value: `${user.wins}`, inline: true },
           { name: '💔 Prohry', value: `${user.losses}`, inline: true },
           { name: '📈 Win Rate', value: `${winRate}%`, inline: true }
@@ -54,10 +64,11 @@ export default {
         .setFooter({ text: 'RP Bot System' });
 
       // Přidání info o upgradech
-      if (user.work_boost > 0 || user.rob_protection > 0) {
+      const now = Date.now();
+      if (user.work_boost > now || user.rob_protection > now) {
         let upgrades = [];
-        if (user.work_boost > 0) upgrades.push('🔧 Work Boost');
-        if (user.rob_protection > 0) upgrades.push('🛡️ Rob Protection');
+        if (user.work_boost > now) upgrades.push('🔧 Work Boost');
+        if (user.rob_protection > now) upgrades.push('🛡️ Rob Protection');
         embed.addFields({ name: '🎁 Aktivní upgrady', value: upgrades.join('\n'), inline: false });
       }
 

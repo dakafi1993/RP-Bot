@@ -16,7 +16,8 @@ export default {
     const bet = interaction.options.getInteger('bet');
 
     try {
-      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+      const userResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+      const user = userResult.rows[0];
 
       if (!user) {
         return interaction.reply({ 
@@ -82,12 +83,10 @@ export default {
 
       if (won === true) {
         newMoney += bet;
-        db.prepare('UPDATE users SET money = ?, wins = wins + 1 WHERE id = ?')
-          .run(newMoney, userId);
+        await db.query('UPDATE users SET money = $1, wins = wins + 1 WHERE id = $2', [newMoney, userId]);
       } else if (won === false) {
         newMoney -= bet;
-        db.prepare('UPDATE users SET money = ?, losses = losses + 1 WHERE id = ?')
-          .run(newMoney, userId);
+        await db.query('UPDATE users SET money = $1, losses = losses + 1 WHERE id = $2', [newMoney, userId]);
       }
 
       const embed = new EmbedBuilder()

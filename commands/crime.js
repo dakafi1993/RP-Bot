@@ -9,7 +9,8 @@ export default {
     const userId = interaction.user.id;
 
     try {
-      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+      const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+      const user = result.rows[0];
 
       if (!user) {
         return interaction.reply({ 
@@ -38,11 +39,23 @@ export default {
       ];
 
       const crime = crimes[Math.floor(Math.random() * crimes.length)];
-      const success = Math.random() < crime.success;
+      let successChance = crime.success;
+      
+      // Warrior rasový bonus (+30% úspěšnost)
+      if (user.race === 'warrior') {
+        successChance = Math.min(1, successChance + 0.3);
+      }
+      
+      const success = Math.random() < successChance;
 
       if (success) {
         const earned = Math.floor(Math.random() * (crime.reward[1] - crime.reward[0])) + crime.reward[0];
-        const xpEarned = Math.floor(earned / 20);
+        let xpEarned = Math.floor(earned / 20);
+        
+        // Mage rasový bonus (+50% XP)
+        if (user.race === 'mage') {
+          xpEarned = Math.floor(xpEarned * 1.5);
+        }
 
         let newXp = user.xp + xpEarned;
         let newMoney = user.money + earned;
@@ -55,8 +68,10 @@ export default {
           leveledUp = true;
         }
 
-        db.prepare('UPDATE users SET money = ?, xp = ?, level = ? WHERE id = ?')
-          .run(newMoney, newXp, newLevel, userId);
+        await db.query(
+          'UPDATE users SET money = $1, xp = $2, level = $3 WHERE id = $4',
+          [newMoney, newXp, newLevel, userId]
+        );
 
         const embed = new EmbedBuilder()
           .setColor(0x2ECC71)
@@ -78,7 +93,7 @@ export default {
         const fine = Math.floor(user.money * 0.3);
         const newMoney = Math.max(0, user.money - fine);
 
-        db.prepare('UPDATE users SET money = ? WHERE id = ?').run(newMoney, userId);
+        await db.query('UPDATE users SET money = $1 WHERE id = $2', [newMoney, userId]);
 
         const embed = new EmbedBuilder()
           .setColor(0xE74C3C)

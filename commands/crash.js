@@ -18,7 +18,8 @@ export default {
     const bet = interaction.options.getInteger('bet');
 
     try {
-      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+      const userResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+      const user = userResult.rows[0];
 
       if (!user) {
         return interaction.reply({ 
@@ -107,10 +108,10 @@ async function runCrashGame(interaction, game) {
         )
         .setTimestamp();
 
-      const user = game.db.prepare('SELECT * FROM users WHERE id = ?').get(game.userId);
+      const userResult = await game.db.query('SELECT * FROM users WHERE id = $1', [game.userId]);
+      const user = userResult.rows[0];
       const newMoney = user.money - game.bet;
-      game.db.prepare('UPDATE users SET money = ?, losses = losses + 1 WHERE id = ?')
-        .run(newMoney, game.userId);
+      await game.db.query('UPDATE users SET money = $1, losses = losses + 1 WHERE id = $2', [newMoney, game.userId]);
 
       await interaction.editReply({ embeds: [embed], components: [] });
       games.delete(game.userId);
@@ -155,10 +156,10 @@ export async function handleCrashButton(interaction) {
   const winAmount = Math.floor(game.bet * game.multiplier);
   const profit = winAmount - game.bet;
 
-  const user = game.db.prepare('SELECT * FROM users WHERE id = ?').get(game.userId);
+  const userResult = await game.db.query('SELECT * FROM users WHERE id = $1', [game.userId]);
+  const user = userResult.rows[0];
   const newMoney = user.money + profit;
-  game.db.prepare('UPDATE users SET money = ?, wins = wins + 1 WHERE id = ?')
-    .run(newMoney, game.userId);
+  await game.db.query('UPDATE users SET money = $1, wins = wins + 1 WHERE id = $2', [newMoney, game.userId]);
 
   const embed = new EmbedBuilder()
     .setColor(0x2ECC71)

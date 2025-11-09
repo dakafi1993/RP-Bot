@@ -9,7 +9,8 @@ export default {
     const userId = interaction.user.id;
 
     try {
-      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+      const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+      const user = result.rows[0];
 
       if (!user) {
         return interaction.reply({ 
@@ -41,6 +42,11 @@ export default {
       const job = jobs[Math.floor(Math.random() * jobs.length)];
       let moneyEarned = Math.floor(Math.random() * (job.pay[1] - job.pay[0])) + job.pay[0];
       
+      // Elf rasový bonus (+20% výdělek)
+      if (user.race === 'elf') {
+        moneyEarned = Math.floor(moneyEarned * 1.2);
+      }
+      
       // Kontrola work boost
       let boostActive = false;
       if (user.work_boost > Date.now()) {
@@ -48,7 +54,11 @@ export default {
         boostActive = true;
       }
       
-      const xpEarned = Math.floor(Math.random() * 10) + 1;
+      // Mage rasový bonus (+50% XP)
+      let xpEarned = Math.floor(Math.random() * 10) + 1;
+      if (user.race === 'mage') {
+        xpEarned = Math.floor(xpEarned * 1.5);
+      }
 
       let newXp = user.xp + xpEarned;
       let newMoney = user.money + moneyEarned;
@@ -61,8 +71,10 @@ export default {
         leveledUp = true;
       }
 
-      db.prepare('UPDATE users SET money = ?, xp = ?, level = ? WHERE id = ?')
-        .run(newMoney, newXp, newLevel, userId);
+      await db.query(
+        'UPDATE users SET money = $1, xp = $2, level = $3 WHERE id = $4',
+        [newMoney, newXp, newLevel, userId]
+      );
 
       const embed = new EmbedBuilder()
         .setColor(0x2ECC71)

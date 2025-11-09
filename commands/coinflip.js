@@ -28,7 +28,8 @@ export default {
     const choice = interaction.options.getString('choice');
 
     try {
-      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+      const userResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+      const user = userResult.rows[0];
 
       if (!user) {
         return interaction.reply({ 
@@ -70,8 +71,7 @@ export default {
 
       if (won) {
         newMoney += bet;
-        db.prepare('UPDATE users SET money = ?, wins = wins + 1 WHERE id = ?')
-          .run(newMoney, userId);
+        await db.query('UPDATE users SET money = $1, wins = wins + 1 WHERE id = $2', [newMoney, userId]);
 
         const embed = new EmbedBuilder()
           .setColor(0x2ECC71)
@@ -87,8 +87,7 @@ export default {
         await msg.edit({ embeds: [embed] });
       } else {
         newMoney -= bet;
-        db.prepare('UPDATE users SET money = ?, losses = losses + 1 WHERE id = ?')
-          .run(newMoney, userId);
+        await db.query('UPDATE users SET money = $1, losses = losses + 1 WHERE id = $2', [newMoney, userId]);
 
         const embed = new EmbedBuilder()
           .setColor(0xE74C3C)

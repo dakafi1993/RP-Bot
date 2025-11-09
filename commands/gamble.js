@@ -16,7 +16,8 @@ export default {
     const bet = interaction.options.getInteger('amount');
 
     try {
-      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+      const result1 = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+      const user = result1.rows[0];
 
       if (!user) {
         return interaction.reply({ 
@@ -39,19 +40,19 @@ export default {
       if (roll < 0.45) {
         // Prohra
         newMoney -= bet;
-        db.prepare('UPDATE users SET money = ?, losses = losses + 1 WHERE id = ?').run(newMoney, userId);
+        await db.query('UPDATE users SET money = $1, losses = losses + 1 WHERE id = $2', [newMoney, userId]);
         result = `🎰 **Prohra!**\n❌ Prohral jsi **${bet} Kč**.\nZůstatek: **${newMoney} Kč**`;
       } else if (roll < 0.90) {
         // Výhra 2x
         const win = bet * 2;
         newMoney += bet;
-        db.prepare('UPDATE users SET money = ?, wins = wins + 1 WHERE id = ?').run(newMoney, userId);
+        await db.query('UPDATE users SET money = $1, wins = wins + 1 WHERE id = $2', [newMoney, userId]);
         result = `🎰 **VÝHRA!**\n💰 Vyhrál jsi **${win} Kč**!\nZůstatek: **${newMoney} Kč**`;
       } else {
         // Jackpot 5x
         const win = bet * 5;
         newMoney += bet * 4;
-        db.prepare('UPDATE users SET money = ?, wins = wins + 1 WHERE id = ?').run(newMoney, userId);
+        await db.query('UPDATE users SET money = $1, wins = wins + 1 WHERE id = $2', [newMoney, userId]);
         result = `🎰 **JACKPOT!!!**\n🎉💎 Vyhrál jsi **${win} Kč**!!!\nZůstatek: **${newMoney} Kč**`;
       }
 

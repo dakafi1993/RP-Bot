@@ -10,7 +10,8 @@ export default {
 
     try {
       // Kontrola existence uživatele
-      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+      const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+      const user = result.rows[0];
 
       if (!user) {
         return interaction.reply({ 
@@ -39,8 +40,7 @@ export default {
       const dailyAmount = 500;
       const newMoney = user.money + dailyAmount;
 
-      db.prepare('UPDATE users SET money = ?, last_daily = ? WHERE id = ?')
-        .run(newMoney, now, userId);
+      await db.query('UPDATE users SET money = $1, last_daily = $2 WHERE id = $3', [newMoney, now, userId]);
 
       await interaction.reply({
         content: `🎁 Získal jsi denní odměnu **${dailyAmount} Kč**! Celkem máš **${newMoney} Kč**.`,

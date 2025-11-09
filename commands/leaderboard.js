@@ -8,12 +8,13 @@ export default {
   async execute(interaction, db) {
     try {
       // Získání top 10 hráčů seřazených podle levelu a peněz
-      const topUsers = db.prepare(`
+      const result = await db.query(`
         SELECT id, money, xp, level 
         FROM users 
         ORDER BY level DESC, money DESC 
         LIMIT 10
-      `).all();
+      `);
+      const topUsers = result.rows;
 
       if (topUsers.length === 0) {
         return interaction.reply({

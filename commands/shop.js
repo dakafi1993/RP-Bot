@@ -19,7 +19,8 @@ export default {
     const item = interaction.options.getString('item');
 
     try {
-      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+      const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+      const user = result.rows[0];
 
       if (!user) {
         return interaction.reply({ 
@@ -57,8 +58,7 @@ export default {
         }
 
         const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 dní
-        db.prepare('UPDATE users SET money = money - 5000, work_boost = ? WHERE id = ?')
-          .run(expiresAt, userId);
+        await db.query('UPDATE users SET money = money - 5000, work_boost = $1 WHERE id = $2', [expiresAt, userId]);
 
         return interaction.reply({
           content: '✅ Zakoupil jsi **🔧 Work Boost**! Tvůj výdělek z `/work` je nyní 2x na 7 dní.',
@@ -75,8 +75,7 @@ export default {
         }
 
         const expiresAt = Date.now() + (5 * 24 * 60 * 60 * 1000); // 5 dní
-        db.prepare('UPDATE users SET money = money - 3000, rob_protection = ? WHERE id = ?')
-          .run(expiresAt, userId);
+        await db.query('UPDATE users SET money = money - 3000, rob_protection = $1 WHERE id = $2', [expiresAt, userId]);
 
         return interaction.reply({
           content: '✅ Zakoupil jsi **🛡️ Rob Protection**! Jsi chráněn před okradením na 5 dní.',
