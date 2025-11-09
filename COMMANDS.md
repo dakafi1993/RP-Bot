@@ -22,32 +22,45 @@ Při vytváření postavy vyber rasu:
   - ⚔️ Warrior: +30% na úspěšnost (50% → 80%)
 
 ## 🎰 Hazardní hry (Animované)
-- `/gamble amount:[částka] type:[barva]` - Ruleta v kasinu (min 50 Kč)
+
+### 🎮 Minihry podle říše
+Každá říše má své dostupné hry - čím vyšší level, tím více her!
+
+**🏛️ Starodávná říše (Level 1-19):**
+- `/dice bet:[částka]` - 🎲 Hoď kostkami proti botovi (min 100 Kč)
+- `/coinflip bet:[částka] choice:[hlava/orel]` - 🪙 Hoď mincí (min 100 Kč)
+
+**🏰 Středověká říše (Level 20-39):**
+- Vše ze Starodávné +
+- `/slots bet:[částka]` - 🎰 Slot machine s animací (min 50 Kč)
+  - 💎💎💎 = 50x jackpot
+  - 7️⃣7️⃣7️⃣ = 20x jackpot
+  - Tři stejné = 10x
+  - Dva stejné = 2x
+- `/blackjack bet:[částka]` - 🃏 Interaktivní blackjack (min 50 Kč)
+  - Tlačítka Hit/Stand
+  - Dealer musí táhnout do 17
+
+**🎨 Renesanční říše (Level 40-59):**
+- Vše ze Středověké +
+- `/gamble amount:[částka] type:[barva]` - 🎡 Ruleta v kasinu (min 50 Kč)
   - 🔴 Červená (2x) - čísla 1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36
   - ⚫ Černá (2x) - čísla 2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35
   - 🟢 Zelená/0 (36x)
   - 🎯 Volitelně: `number:[0-36]` - sázka na konkrétní číslo (36x)
 
-- `/slots bet:[částka]` - Slot machine s animací (min 50 Kč)
-  - 💎💎💎 = 50x jackpot
-  - 7️⃣7️⃣7️⃣ = 20x jackpot
-  - Tři stejné = 10x
-  - Dva stejné = 2x
-
-- `/coinflip bet:[částka] choice:[hlava/orel]` - Hoď mincí (min 100 Kč)
-  - 50/50 šance
-  - Výhra = 2x
-
-- `/blackjack bet:[částka]` - Interaktivní blackjack (min 50 Kč)
-  - Tlačítka Hit/Stand
-  - Dealer musí táhnout do 17
-
-- `/crash bet:[částka]` - Crash game (min 100 Kč)
+**🏙️ Moderní říše (Level 60-79):**
+- Vše z Renesanční +
+- `/crash bet:[částka]` - 📈 Crash game (min 100 Kč)
   - Sleduj rostoucí multiplier
   - Cash out včas než spadne!
 
-- `/dice bet:[částka]` - Hoď kostkami proti botovi (min 100 Kč)
-  - Vyšší součet vyhrává
+**🚀 Futuristická říše (Level 80+):**
+- Vše z Moderní +
+- ⚛️ **Quantum Bet** (budoucí feature) - Kvantová sázka s 50% šancí na 3x!
+
+### 📋 Zobrazení dostupných her
+- `/games` - Zobraz menu s hrami dostupnými pro tvou současnou říši
 
 ## 🎭 PvP
 - `/rob @uživatel` - Pokus okrást jiného hráče
@@ -75,27 +88,38 @@ Při vytváření postavy vyber rasu:
   - Sázka min 100 Kč
   - Vítěz bere vše (2x sázka)
   - Bojuje se s vybavenými zbraněmi/brněním
+  - **Detailní statistiky:** Jména hráčů, damage přijatý, durability ztracená
+  - **Durability:** Vybavení se opotřebovává podle přijatého damage
 - `/expedition` - PvE výprava proti příšerám
   - Příšery podle říše (Goblin → Cyborg)
-  - Odměna: Peníze + XP
+  - Odměna: Peníze + XP + Auto realm progression
   - Prohra: -10% peněz
+  - **Durability:** Vybavení se opotřebovává v boji
+  - **Statistiky:** Zobrazuje damage, durability loss, XP získané
 
 ## 🌍 Říše & Progrese
-Hráči postupují říšemi podle levelu:
-- 🏛️ **Starodávná** (Level 1-10) - Goblini, Vlci, Skeleton
-- 🏰 **Středověká** (Level 11-20) - Rytíři, Draci, Trolli
-- 🎨 **Renesanční** (Level 21-30) - Mušketýři, Alchymisté
-- 🏙️ **Moderní** (Level 31-40) - Válečníci, Snipeři, Tanky
-- 🚀 **Futuristická** (Level 41+) - Cyborgi, AI Roboti, Aliens
+Hráči **automaticky** postupují říšemi podle levelu:
+- 🏛️ **Starodávná** (Level 1-19) - Goblini, Vlci, Skeleton | 2 minihry
+- 🏰 **Středověká** (Level 20-39) - Rytíři, Draci, Trolli | 4 minihry
+- 🎨 **Renesanční** (Level 40-59) - Mušketýři, Alchymisté | 5 miniher
+- 🏙️ **Moderní** (Level 60-79) - Válečníci, Snipeři, Tanky | 6 miniher
+- 🚀 **Futuristická** (Level 80+) - Cyborgi, AI Roboti, Aliens | 7 miniher
+
+Při levelování dostaneš notifikaci o postupu do nové říše!
 
 ## ⛏️ Mining & Tržiště
-- `/mine` - Těž kovy (závisí na krumpáči) **[Cooldown: 30 minut]**
+- `/mine` - Těž kovy (závisí na krumpáči) **[Cooldown: 5 minut]**
+  - 💎 **Diamanty: Speciální cooldown 10 minut!**
   - 🪵 **Dřevěný krumpáč** (výchozí): 70% Železo, 25% Měď, 5% Diamant (rozbije se po použití)
   - ⚙️ **Železný krumpáč** (5000 Kč): 45% Železo, 30% Měď, 15% Zlato, 10% Diamant (durability 100%)
   - 💎 **Diamantový krumpáč** (50000 Kč): 25% Železo, 25% Měď, 30% Zlato, 20% Diamant (durability 100%)
-- `/repair` - Oprav krumpáč (dřevěný nelze opravit)
-  - ⚙️ Železný: 2000 Kč
-  - 💎 Diamantový: 10000 Kč
+- `/repair item:[krumpáč/zbraň/helma/brnění/boty/vše]` - Oprav vybavení
+  - ⛏️ **Krumpáč:** Železný 2000 Kč, Diamantový 10000 Kč
+  - ⚔️ **Zbraň:** 1000 Kč
+  - 🪖 **Helma:** 800 Kč
+  - 🛡️ **Brnění:** 1500 Kč
+  - 👢 **Boty:** 600 Kč
+  - 🔧 **Vše:** Opraví všechno najednou (suma cen)
 - `/upgrade` - Vylepši krumpáč pro lepší rudy
 - `/inventory` - Zobraz své kovy a celkovou hodnotu
 - `/sell ore:[typ] amount:[počet]` - Prodej kovy do NPC shopu za fixní ceny
@@ -103,9 +127,20 @@ Hráči postupují říšemi podle levelu:
   - 🟠 Měď: 100 Kč/ks
   - 🟡 Zlato: 500 Kč/ks
   - 💎 Diamant: 2000 Kč/ks
-- `/auction create ore:[typ] amount:[počet] price:[cena/ks]` - Vytvoř aukci pro hráče
+
+## 🏛️ Aukce (Player-to-Player Trading)
+- `/auction create type:[kovy/vybavení]` - Vytvoř aukci pro hráče
+  - **Kovy:** `ore:[typ] amount:[počet] price:[cena/ks]`
+    - Prodej kovy za vlastní ceny (ne fixní NPC)
+    - Například: `type:ore ore:gold amount:10 price:600` (600 Kč/ks)
+  - **Vybavení:** `equipment:[typ] price:[cena]`
+    - ⚔️ Zbraň, ⛑️ Helma, 🛡️ Brnění, 👟 Boty
+    - Zachovává durabilitu!
+    - Příklad: `type:equipment equipment:weapon price:5000`
 - `/auction list` - Zobraz aktivní aukce hráčů
   - 💰 Tlačítko "Koupit" - Automatická transakce mezi hráči
+  - Zobrazuje stav durability u vybavení
+  - Kupující nemůže mít už stejný typ vybavení
 
 ## � Admin příkazy (User ID: 1436690629949263964)
 
@@ -116,6 +151,7 @@ Hráči postupují říšemi podle levelu:
 
 ### ⭐ Správa XP & Vybavení
 - `/admin addxp @user amount:[xp]` - Přidej XP hráči (automatický level up při 100+)
+- `/admin removexp @user amount:[xp]` - Odeber XP hráči (automatický level down)
 - `/admin setpickaxe @user pickaxe:[wooden/iron/diamond]` - Nastav krumpáč hráči
 - `/admin addores @user iron:[x] copper:[x] gold:[x] diamond:[x]` - Přidej kovy do inventáře
 - `/admin setrealm @user realm:[ancient/medieval/renaissance/modern/futuristic]` - Změň říši hráče

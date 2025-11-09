@@ -8,49 +8,44 @@ export async function checkRealmProgression(db, userId, currentLevel, currentRea
     'futuristic': { min: 80, max: 999, next: null }
   };
 
-  const currentRealmData = realmThresholds[currentRealm];
-  
-  // Kontrola, zda hráč má vyšší level než jeho současná říše
-  if (currentLevel > currentRealmData.max && currentRealmData.next) {
-    // Najdi správnou říši pro current level
-    let newRealm = currentRealm;
-    for (const [realm, data] of Object.entries(realmThresholds)) {
-      if (currentLevel >= data.min && currentLevel <= data.max) {
-        newRealm = realm;
-        break;
-      }
+  // Najdi správnou říši pro current level
+  let correctRealm = 'ancient';
+  for (const [realm, data] of Object.entries(realmThresholds)) {
+    if (currentLevel >= data.min && currentLevel <= data.max) {
+      correctRealm = realm;
+      break;
     }
+  }
 
-    // Pokud je nová říše jiná než současná, updateuj
-    if (newRealm !== currentRealm) {
-      await db.query(
-        'UPDATE users SET realm = $1, century = $2 WHERE id = $3',
-        [newRealm, 1, userId]
-      );
-      
-      const realmEmojis = {
-        'ancient': '🏛️',
-        'medieval': '🏰',
-        'renaissance': '🎨',
-        'modern': '🏙️',
-        'futuristic': '🚀'
-      };
+  // Pokud je nová říše jiná než současná, updateuj
+  if (correctRealm !== currentRealm) {
+    await db.query(
+      'UPDATE users SET realm = $1, century = $2 WHERE id = $3',
+      [correctRealm, 1, userId]
+    );
+    
+    const realmEmojis = {
+      'ancient': '🏛️',
+      'medieval': '🏰',
+      'renaissance': '🎨',
+      'modern': '🏙️',
+      'futuristic': '🚀'
+    };
 
-      const realmNames = {
-        'ancient': 'Antika',
-        'medieval': 'Středověk',
-        'renaissance': 'Renesance',
-        'modern': 'Moderna',
-        'futuristic': 'Budoucnost'
-      };
+    const realmNames = {
+      'ancient': 'Antika',
+      'medieval': 'Středověk',
+      'renaissance': 'Renesance',
+      'modern': 'Moderna',
+      'futuristic': 'Budoucnost'
+    };
 
-      return {
-        advanced: true,
-        newRealm: newRealm,
-        emoji: realmEmojis[newRealm],
-        name: realmNames[newRealm]
-      };
-    }
+    return {
+      advanced: true,
+      newRealm: correctRealm,
+      emoji: realmEmojis[correctRealm],
+      name: realmNames[correctRealm]
+    };
   }
 
   return { advanced: false };

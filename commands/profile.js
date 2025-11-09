@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { SHOP_ITEMS } from './shop.js';
+import { checkRealmProgression } from '../utils/realm-progression.js';
 
 // Admin a Moderátor ID pro badge
 const ADMIN_USER_IDS = ['1436690629949263964'];
@@ -24,9 +25,16 @@ export default {
         });
       }
 
+      // Kontrola a oprava realm progression (při každém zobrazení profilu)
+      await checkRealmProgression(db, userId, user.level, user.realm);
+      
+      // Znovu načíst data po možné změně
+      const updatedResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+      const updatedUser = updatedResult.rows[0];
+
       // Výpočet win rate
-      const totalGames = user.wins + user.losses;
-      const winRate = totalGames > 0 ? ((user.wins / totalGames) * 100).toFixed(1) : 0;
+      const totalGames = updatedUser.wins + updatedUser.losses;
+      const winRate = totalGames > 0 ? ((updatedUser.wins / totalGames) * 100).toFixed(1) : 0;
 
       // Rank podle levelu
       const ranks = [
@@ -39,7 +47,7 @@ export default {
 
       let rank = ranks[0];
       for (const r of ranks) {
-        if (user.level >= r.level) rank = r;
+        if (updatedUser.level >= r.level) rank = r;
       }
 
       // Rasové info s emoji a bonusy
@@ -51,7 +59,7 @@ export default {
         thief: { emoji: '🗡️', name: 'Zloděj', bonus: '+20% úspěšnost krádeží' }
       };
 
-      const race = raceData[user.race] || raceData.human;
+      const race = raceData[updatedUser.race] || raceData.human;
 
       // Krumpáč info
       const pickaxeData = {
@@ -60,20 +68,20 @@ export default {
         diamond: { emoji: '💎', name: 'Diamantový krumpáč', tier: 'III' }
       };
 
-      const pickaxe = pickaxeData[user.pickaxe || 'wooden'];
+      const pickaxe = pickaxeData[updatedUser.pickaxe || 'wooden'];
 
       // Výpočet celkové hodnoty kovů
       const oreValues = {
-        iron: user.iron * 50,
-        copper: user.copper * 100,
-        gold: user.gold * 500,
-        diamond: user.diamond * 2000
+        iron: updatedUser.iron * 50,
+        copper: updatedUser.copper * 100,
+        gold: updatedUser.gold * 500,
+        diamond: updatedUser.diamond * 2000
       };
       const totalOreValue = oreValues.iron + oreValues.copper + oreValues.gold + oreValues.diamond;
-      const totalWealth = user.money + totalOreValue;
+      const totalWealth = updatedUser.money + totalOreValue;
 
       // Progress bar pro XP
-      const xpProgress = Math.floor((user.xp / 100) * 10);
+      const xpProgress = Math.floor((updatedUser.xp / 100) * 10);
       const xpBar = '█'.repeat(xpProgress) + '░'.repeat(10 - xpProgress);
 
       // Admin/Moderátor badge
@@ -95,20 +103,34 @@ export default {
         futuristic: { emoji: '🚀', name: 'Futuristická říše', color: 0x9370DB }
       };
       
-      const realm = realmData[user.realm || 'ancient'];
+      const realm = realmData[updatedUser.realm || 'ancient'];
 
       // Vybavení
-      const weaponItem = user.weapon ? SHOP_ITEMS[user.weapon] : null;
-      const helmetItem = user.helmet ? SHOP_ITEMS[user.helmet] : null;
-      const armorItem = user.armor ? SHOP_ITEMS[user.armor] : null;
-      const bootsItem = user.boots ? SHOP_ITEMS[user.boots] : null;
-      const potionItem = user.potion ? SHOP_ITEMS[user.potion] : null;
+      const weaponItem = updatedUser.weapon ? SHOP_ITEMS[updatedUser.weapon] : null;
+      const helmetItem = updatedUser.helmet ? SHOP_ITEMS[updatedUser.helmet] : null;
+      const armorItem = updatedUser.armor ? SHOP_ITEMS[updatedUser.armor] : null;
+      const bootsItem = updatedUser.boots ? SHOP_ITEMS[updatedUser.boots] : null;
+      const potionItem = updatedUser.potion ? SHOP_ITEMS[updatedUser.potion] : null;
+
+      // Durability pro každý item
+      const weaponDur = updatedUser.weapon_durability || 100;
+      const helmetDur = updatedUser.helmet_durability || 100;
+      const armorDur = updatedUser.armor_durability || 100;
+      const bootsDur = updatedUser.boots_durability || 100;
+
+      // Určení stavu durability (emoji)
+      const getDurabilityEmoji = (dur) => {
+        if (dur >= 80) return '🟢';
+        if (dur >= 50) return '🟡';
+        if (dur >= 20) return '🟠';
+        return '🔴';
+      };
 
       let equipmentText = '';
-      equipmentText += `⚔️ **Zbraň:** ${weaponItem ? weaponItem.name : '---'}\n`;
-      equipmentText += `⛑️ **Helma:** ${helmetItem ? helmetItem.name : '---'}\n`;
-      equipmentText += `🛡️ **Brnění:** ${armorItem ? armorItem.name : '---'}\n`;
-      equipmentText += `👟 **Boty:** ${bootsItem ? bootsItem.name : '---'}\n`;
+      equipmentText += `⚔️ **Zbraň:** ${weaponItem ? `${weaponItem.name} ${getDurabilityEmoji(weaponDur)} (${weaponDur}%)` : '---'}\n`;
+      equipmentText += `⛑️ **Helma:** ${helmetItem ? `${helmetItem.name} ${getDurabilityEmoji(helmetDur)} (${helmetDur}%)` : '---'}\n`;
+      equipmentText += `🛡️ **Brnění:** ${armorItem ? `${armorItem.name} ${getDurabilityEmoji(armorDur)} (${armorDur}%)` : '---'}\n`;
+      equipmentText += `👟 **Boty:** ${bootsItem ? `${bootsItem.name} ${getDurabilityEmoji(bootsDur)} (${bootsDur}%)` : '---'}\n`;
       equipmentText += `🧪 **Lektvar:** ${potionItem ? potionItem.name : '---'}`;
 
       // Celkové statistiky bojovníka
@@ -123,8 +145,8 @@ export default {
         .setColor(realm.color)
         .setTitle(`╔══════════════════════╗`)
         .setDescription(
-          `**${rank.name} • ${user.name || interaction.user.username}**${statusBadge}\n` +
-          `${realm.emoji} **${realm.name}** | Století: ${user.century || 1}`
+          `**${rank.name} • ${updatedUser.name || interaction.user.username}**${statusBadge}\n` +
+          `${realm.emoji} **${realm.name}** | Století: ${updatedUser.century || 1}`
         )
         .setAuthor({ 
           name: interaction.user.username, 
@@ -137,14 +159,14 @@ export default {
             value: 
               `${race.emoji} **Rasa:** ${race.name}\n` +
               `💡 **Bonus:** ${race.bonus}\n` +
-              `⭐ **Level:** ${user.level} | � **XP:** ${user.xp}/100\n` +
-              `${xpBar} \`${user.xp}%\``,
+              `⭐ **Level:** ${updatedUser.level} | 📈 **XP:** ${updatedUser.xp}/100\n` +
+              `${xpBar} \`${updatedUser.xp}%\``,
             inline: false 
           },
           { 
             name: '━━━━━━━ 💰 EKONOMIKA ━━━━━━━',
             value: 
-              `💵 **Hotovost:** ${user.money.toLocaleString()} Kč\n` +
+              `💵 **Hotovost:** ${updatedUser.money.toLocaleString()} Kč\n` +
               `⛏️ **Kovy:** ${totalOreValue.toLocaleString()} Kč\n` +
               `💎 **Celkem:** ${totalWealth.toLocaleString()} Kč`,
             inline: false 
@@ -152,7 +174,7 @@ export default {
           { 
             name: '━━━━━━━ 🛠️ VYBAVENÍ ━━━━━━━',
             value: 
-              `${pickaxe.emoji} **${pickaxe.name}** (${user.pickaxe_durability || 100}%)\n` +
+              `${pickaxe.emoji} **${pickaxe.name}** (${updatedUser.pickaxe_durability || 100}%)\n` +
               `💡 *Použij \`/upgrade\` nebo \`/repair\`*`,
             inline: false 
           },
@@ -166,28 +188,28 @@ export default {
           },
           {
             name: '⚙️ Železo',
-            value: `${user.iron}x\n(${oreValues.iron} Kč)`,
+            value: `${updatedUser.iron}x\n(${oreValues.iron} Kč)`,
             inline: true
           },
           {
-            name: '� Měď',
-            value: `${user.copper}x\n(${oreValues.copper} Kč)`,
+            name: '🟤 Měď',
+            value: `${updatedUser.copper}x\n(${oreValues.copper} Kč)`,
             inline: true
           },
           {
             name: '🟡 Zlato',
-            value: `${user.gold}x\n(${oreValues.gold} Kč)`,
+            value: `${updatedUser.gold}x\n(${oreValues.gold} Kč)`,
             inline: true
           },
           {
-            name: '� Diamant',
-            value: `${user.diamond}x\n(${oreValues.diamond} Kč)`,
+            name: '💎 Diamant',
+            value: `${updatedUser.diamond}x\n(${oreValues.diamond} Kč)`,
             inline: true
           },
           { 
             name: '━━━━━━━ 🎮 HERNÍ STATISTIKY ━━━━━━━',
             value: 
-              `✅ **Výhry:** ${user.wins} | ❌ **Prohry:** ${user.losses}\n` +
+              `✅ **Výhry:** ${updatedUser.wins} | ❌ **Prohry:** ${updatedUser.losses}\n` +
               `📈 **Win Rate:** ${winRate}% | 🎯 **Celkem her:** ${totalGames}`,
             inline: false 
           }
@@ -197,14 +219,14 @@ export default {
 
       // Přidání info o aktivních upgradech
       const now = Date.now();
-      if (user.work_boost > now || user.rob_protection > now) {
+      if (updatedUser.work_boost > now || updatedUser.rob_protection > now) {
         let upgrades = [];
-        if (user.work_boost > now) {
-          const timeLeft = Math.ceil((user.work_boost - now) / (1000 * 60 * 60 * 24));
+        if (updatedUser.work_boost > now) {
+          const timeLeft = Math.ceil((updatedUser.work_boost - now) / (1000 * 60 * 60 * 24));
           upgrades.push(`🔧 Work Boost (${timeLeft}d)`);
         }
-        if (user.rob_protection > now) {
-          const timeLeft = Math.ceil((user.rob_protection - now) / (1000 * 60 * 60 * 24));
+        if (updatedUser.rob_protection > now) {
+          const timeLeft = Math.ceil((updatedUser.rob_protection - now) / (1000 * 60 * 60 * 24));
           upgrades.push(`🛡️ Rob Protection (${timeLeft}d)`);
         }
         embed.addFields({ 

@@ -137,13 +137,23 @@ export default {
         }
 
         if (['weapon', 'helmet', 'armor', 'boots', 'potion'].includes(item.category)) {
-          // Vybavení - ulož do inventáře
+          // Vybavení - ulož do inventáře + nastav plnou durability
           const columnName = item.category;
+          const durabilityColumn = `${columnName}_durability`;
           
-          await db.query(
-            `UPDATE users SET money = money - $1, ${columnName} = $2 WHERE id = $3`,
-            [item.price, itemKey, userId]
-          );
+          // Pro lektvary durability neřešíme
+          if (item.category === 'potion') {
+            await db.query(
+              `UPDATE users SET money = money - $1, ${columnName} = $2 WHERE id = $3`,
+              [item.price, itemKey, userId]
+            );
+          } else {
+            // Pro weapon/helmet/armor/boots nastavíme durability na 100
+            await db.query(
+              `UPDATE users SET money = money - $1, ${columnName} = $2, ${durabilityColumn} = 100 WHERE id = $3`,
+              [item.price, itemKey, userId]
+            );
+          }
 
           const embed = new EmbedBuilder()
             .setColor(0x2ECC71)

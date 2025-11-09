@@ -233,8 +233,47 @@ export async function handleArenaButton(interaction, db) {
   if (interaction.customId === 'arena_accept') {
     activeChallenges.delete(messageId);
 
-    // Simulace boje
-    const battleLog = simulateBattle(challenge);
+    // Získání avatarů
+    const challengerUser = await interaction.client.users.fetch(challenge.challengerId);
+    const opponentUser = await interaction.client.users.fetch(challenge.opponentId);
+
+    // Animace začátku boje s kartami
+    const startEmbed = new EmbedBuilder()
+      .setColor(0xFF6347)
+      .setTitle('⚔️ BŮJ ZAČÍNÁ!')
+      .setDescription(
+        `╔═══════════════════════════════╗\n` +
+        `║          SOUBOJNÍCI          ║\n` +
+        `╚═══════════════════════════════╝`
+      )
+      .addFields(
+        { 
+          name: `⚔️ ${challenge.challengerName}`,
+          value: 
+            `💥 DMG: ${challenge.challengerStats.damage}\n` +
+            `🛡️ DEF: ${challenge.challengerStats.defense}\n` +
+            `❤️ HP: ${challenge.challengerStats.hp}/${challenge.challengerStats.hp}`,
+          inline: true 
+        },
+        { name: '\u200b', value: '**VS**', inline: true },
+        { 
+          name: `⚔️ ${challenge.opponentName}`,
+          value: 
+            `💥 DMG: ${challenge.opponentStats.damage}\n` +
+            `🛡️ DEF: ${challenge.opponentStats.defense}\n` +
+            `❤️ HP: ${challenge.opponentStats.hp}/${challenge.opponentStats.hp}`,
+          inline: true 
+        }
+      )
+      .setThumbnail(challengerUser.displayAvatarURL())
+      .setImage(opponentUser.displayAvatarURL())
+      .setTimestamp();
+
+    await interaction.update({ embeds: [startEmbed], components: [] });
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Simulace boje s real-time updates
+    const battleLog = await simulateBattleWithUpdates(challenge, interaction, challengerUser, opponentUser);
 
     // Aktualizace peněz a statistik
     const winnerId = battleLog.winner;
@@ -280,6 +319,34 @@ export async function handleArenaButton(interaction, db) {
         boots_durability = GREATEST(0, COALESCE(boots_durability, 100) - $1)
       WHERE id = $2
     `, [opponentDurabilityLoss, challenge.opponentId]);
+
+    // Finální výsledky s avatarem vítěze
+    const finalEmbed = new EmbedBuilder()
+      .setColor(winnerId === challenge.challengerId ? 0x2ECC71 : 0xE74C3C)
+      .setTitle('⚔️ ARÉNA - VÝSLEDEK SOUBOJE')
+      .setDescription(
+        `╔═══════════════════════════════╗\n` +
+        `║          VÍTĚZ!              ║\n` +
+        `╚═══════════════════════════════╝\n\n` +
+        `🏆 **${winnerName}** <@${winnerId}> zvítězil!\n` +
+        `💰 Získává **${challenge.bet.toLocaleString()} Kč**!`
+      )
+      .addFields(
+        { 
+          name: '📊 Finální statistiky', 
+          value: 
+            `**${challenge.challengerName}:**\n` +
+            `└ ${battleLog.challengerDamageTaken} DMG přijato | -${challengerDurabilityLoss}% durability\n\n` +
+            `**${challenge.opponentName}:**\n` +
+            `└ ${battleLog.opponentDamageTaken} DMG přijato | -${opponentDurabilityLoss}% durability`,
+          inline: false 
+        }
+      )
+      .setThumbnail(winnerId === challenge.challengerId ? challengerUser.displayAvatarURL() : opponentUser.displayAvatarURL())
+      .setFooter({ text: 'GG WP!' })
+      .setTimestamp();
+
+    await interaction.editReply({ embeds: [finalEmbed], components: [] });
 
     const embed = new EmbedBuilder()
       .setColor(0x2ECC71)
@@ -340,5 +407,111 @@ function simulateBattle(challenge) {
     challengerDamageTaken: challengerDamageTaken,
     opponentDamageTaken: opponentDamageTaken,
     description: `**📜 Průběh souboje:**\n\`\`\`\n${log}\`\`\`\n${challengerHp > 0 ? '🏆 Hráč 1 vyhrál!' : '🏆 Hráč 2 vyhrál!'}`
+  };
+}
+
+// Simulace boje s real-time updates a kartami
+async function simulateBattleWithUpdates(challenge, interaction, challengerUser, opponentUser) {
+  let challengerHp = challenge.challengerStats.hp;
+  let opponentHp = challenge.opponentStats.hp;
+  const maxChallengerHp = challenge.challengerStats.hp;
+  const maxOpponentHp = challenge.opponentStats.hp;
+
+  let round = 0;
+  let challengerDamageTaken = 0;
+  let opponentDamageTaken = 0;
+
+  while (challengerHp > 0 && opponentHp > 0 && round < 20) {
+    round++;
+
+    // Challenger útočí
+    const challengerDamage = Math.max(1, challenge.challengerStats.damage - Math.floor(challenge.opponentStats.defense / 2));
+    opponentHp -= challengerDamage;
+    opponentDamageTaken += challengerDamage;
+
+    // Update embed po útoku challengera
+    const battleEmbed = new EmbedBuilder()
+      .setColor(0xFFAA00)
+      .setTitle(`⚔️ SOUBOJ - KOLO ${round}`)
+      .setDescription(
+        `╔═══════════════════════════════╗\n` +
+        `║       PROBÍHÁ SOUBOJ!        ║\n` +
+        `╚═══════════════════════════════╝`
+      )
+      .addFields(
+        { 
+          name: `⚔️ ${challenge.challengerName}`,
+          value: 
+            `❤️ HP: ${Math.max(0, challengerHp)}/${maxChallengerHp}\n` +
+            `${'█'.repeat(Math.max(0, Math.floor((challengerHp / maxChallengerHp) * 10)))}${'░'.repeat(Math.max(0, 10 - Math.floor((challengerHp / maxChallengerHp) * 10)))}\n` +
+            `🗡️ Útočí: **${challengerDamage} DMG**`,
+          inline: true 
+        },
+        { name: '\u200b', value: '**VS**', inline: true },
+        { 
+          name: `⚔️ ${challenge.opponentName}`,
+          value: 
+            `❤️ HP: ${Math.max(0, opponentHp)}/${maxOpponentHp}\n` +
+            `${'█'.repeat(Math.max(0, Math.floor((opponentHp / maxOpponentHp) * 10)))}${'░'.repeat(Math.max(0, 10 - Math.floor((opponentHp / maxOpponentHp) * 10)))}\n` +
+            `💥 Přijal: **-${challengerDamage} HP**`,
+          inline: true 
+        }
+      )
+      .setThumbnail(challengerUser.displayAvatarURL())
+      .setImage(opponentUser.displayAvatarURL())
+      .setTimestamp();
+
+    await interaction.editReply({ embeds: [battleEmbed] });
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    if (opponentHp <= 0) break;
+
+    // Opponent útočí
+    const opponentDamage = Math.max(1, challenge.opponentStats.damage - Math.floor(challenge.challengerStats.defense / 2));
+    challengerHp -= opponentDamage;
+    challengerDamageTaken += opponentDamage;
+
+    // Update embed po útoku opponenta
+    const battleEmbed2 = new EmbedBuilder()
+      .setColor(0xFF6347)
+      .setTitle(`⚔️ SOUBOJ - KOLO ${round}`)
+      .setDescription(
+        `╔═══════════════════════════════╗\n` +
+        `║       PROBÍHÁ SOUBOJ!        ║\n` +
+        `╚═══════════════════════════════╝`
+      )
+      .addFields(
+        { 
+          name: `⚔️ ${challenge.challengerName}`,
+          value: 
+            `❤️ HP: ${Math.max(0, challengerHp)}/${maxChallengerHp}\n` +
+            `${'█'.repeat(Math.max(0, Math.floor((challengerHp / maxChallengerHp) * 10)))}${'░'.repeat(Math.max(0, 10 - Math.floor((challengerHp / maxChallengerHp) * 10)))}\n` +
+            `💥 Přijal: **-${opponentDamage} HP**`,
+          inline: true 
+        },
+        { name: '\u200b', value: '**VS**', inline: true },
+        { 
+          name: `⚔️ ${challenge.opponentName}`,
+          value: 
+            `❤️ HP: ${Math.max(0, opponentHp)}/${maxOpponentHp}\n` +
+            `${'█'.repeat(Math.max(0, Math.floor((opponentHp / maxOpponentHp) * 10)))}${'░'.repeat(Math.max(0, 10 - Math.floor((opponentHp / maxOpponentHp) * 10)))}\n` +
+            `🗡️ Útočí: **${opponentDamage} DMG**`,
+          inline: true 
+        }
+      )
+      .setThumbnail(opponentUser.displayAvatarURL())
+      .setImage(challengerUser.displayAvatarURL())
+      .setTimestamp();
+
+    await interaction.editReply({ embeds: [battleEmbed2] });
+    await new Promise(resolve => setTimeout(resolve, 1500));
+  }
+
+  const winner = challengerHp > 0 ? challenge.challengerId : challenge.opponentId;
+
+  return {
+    winner: winner,
+    challengerDamageTaken: challengerDamageTaken,
+    opponentDamageTaken: opponentDamageTaken
   };
 }
