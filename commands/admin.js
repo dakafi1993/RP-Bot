@@ -1,7 +1,12 @@
 import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 
-// Seznam admin User IDs (můžeš přidávat další)
+// Seznam admin User IDs (plná práva)
 const ADMIN_USER_IDS = ['1436690629949263964'];
+
+// Seznam moderátor User IDs (omezená práva - max 50000 Kč)
+const MODERATOR_USER_IDS = [
+  // '123456789', // Přidej User ID moderátora sem
+];
 
 export default {
   data: new SlashCommandBuilder()
@@ -70,12 +75,14 @@ export default {
   
   async execute(interaction, db) {
     try {
-      // Kontrola admin User ID
+      // Kontrola admin/moderátor User ID
       const userId = interaction.user.id;
+      const isAdmin = ADMIN_USER_IDS.includes(userId);
+      const isModerator = MODERATOR_USER_IDS.includes(userId);
       
-      console.log(`Admin check: User ID = ${userId}, Allowed IDs = ${ADMIN_USER_IDS.join(', ')}`);
+      console.log(`Admin check: User ID = ${userId}, Admin = ${isAdmin}, Moderator = ${isModerator}`);
       
-      if (!ADMIN_USER_IDS.includes(userId)) {
+      if (!isAdmin && !isModerator) {
         return interaction.reply({
           content: `❌ Nemáš oprávnění používat admin příkazy!\nTvoje ID: ${userId}`,
           ephemeral: true
@@ -99,13 +106,21 @@ export default {
 
       switch (subcommand) {
         case 'addmoney': {
+          // Moderátor limit 50000 Kč
+          if (isModerator && !isAdmin && amount > 50000) {
+            return interaction.reply({
+              content: '❌ Moderátoři mohou přidat maximálně 50,000 Kč!',
+              ephemeral: true
+            });
+          }
+
           const newMoney = user.money + amount;
           await db.query('UPDATE users SET money = $1 WHERE id = $2', [newMoney, targetUser.id]);
 
           const embed = new EmbedBuilder()
             .setColor(0x2ECC71)
             .setTitle('✅ Peníze přidány')
-            .setDescription(`Admin **${interaction.user.username}** přidal peníze`)
+            .setDescription(`${isAdmin ? 'Admin' : 'Moderátor'} **${interaction.user.username}** přidal peníze`)
             .addFields(
               { name: 'Hráč', value: targetUser.username, inline: true },
               { name: 'Částka', value: `+${amount} Kč`, inline: true },
@@ -118,6 +133,14 @@ export default {
         }
 
         case 'removemoney': {
+          // Pouze admin může odebírat peníze
+          if (!isAdmin) {
+            return interaction.reply({
+              content: '❌ Pouze admin může odebírat peníze!',
+              ephemeral: true
+            });
+          }
+
           const reason = interaction.options.getString('reason') || 'Porušení pravidel';
           const newMoney = Math.max(0, user.money - amount);
           await db.query('UPDATE users SET money = $1 WHERE id = $2', [newMoney, targetUser.id]);
@@ -139,6 +162,14 @@ export default {
         }
 
         case 'setmoney': {
+          // Pouze admin může nastavovat peníze
+          if (!isAdmin) {
+            return interaction.reply({
+              content: '❌ Pouze admin může nastavovat peníze!',
+              ephemeral: true
+            });
+          }
+
           await db.query('UPDATE users SET money = $1 WHERE id = $2', [amount, targetUser.id]);
 
           const embed = new EmbedBuilder()
