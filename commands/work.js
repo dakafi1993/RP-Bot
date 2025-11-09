@@ -19,6 +19,21 @@ export default {
         });
       }
 
+      // Kontrola cooldownu (1 minuta)
+      const now = Date.now();
+      const cooldown = 60 * 1000; // 1 minuta
+      const timeSinceLastWork = now - (user.last_work || 0);
+
+      if (timeSinceLastWork < cooldown) {
+        const timeLeft = cooldown - timeSinceLastWork;
+        const secondsLeft = Math.ceil(timeLeft / 1000);
+
+        return interaction.reply({
+          content: `⏰ Musíš počkat ještě **${secondsLeft} sekund** než můžeš pracovat znovu!`,
+          ephemeral: true
+        });
+      }
+
       // Animace práce
       const working = new EmbedBuilder()
         .setColor(0x3498DB)
@@ -72,8 +87,8 @@ export default {
       }
 
       await db.query(
-        'UPDATE users SET money = $1, xp = $2, level = $3 WHERE id = $4',
-        [newMoney, newXp, newLevel, userId]
+        'UPDATE users SET money = $1, xp = $2, level = $3, last_work = $4 WHERE id = $5',
+        [newMoney, newXp, newLevel, now, userId]
       );
 
       const embed = new EmbedBuilder()

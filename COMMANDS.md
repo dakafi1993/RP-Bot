@@ -15,7 +15,7 @@ Při vytváření postavy vyber rasu:
 - 🗡️ **Thief** - +20% úspěšnost u `/rob` (60% → 80%)
 
 ## 💼 Výdělek
-- `/work` - Pracuj za peníze (50-300 Kč + XP)
+- `/work` - Pracuj za peníze (50-300 Kč + XP) **[Cooldown: 1 minuta]**
   - 🧝 Elf: +20% bonus na výdělek
   - 🧙 Mage: +50% XP bonus
 - `/crime` - Spáchej zločin (vysoké riziko/odměna)

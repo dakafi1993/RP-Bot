@@ -31,10 +31,15 @@ await db.query(`
     xp INTEGER DEFAULT 0,
     level INTEGER DEFAULT 1,
     last_daily BIGINT DEFAULT 0,
+    last_work BIGINT DEFAULT 0,
     work_boost BIGINT DEFAULT 0,
     rob_protection BIGINT DEFAULT 0,
     wins INTEGER DEFAULT 0,
-    losses INTEGER DEFAULT 0
+    losses INTEGER DEFAULT 0,
+    iron INTEGER DEFAULT 0,
+    copper INTEGER DEFAULT 0,
+    gold INTEGER DEFAULT 0,
+    diamond INTEGER DEFAULT 0
   )
 `);
 
@@ -60,6 +65,9 @@ for (const file of commandFiles) {
   }
   if (commandModule.handleCrashButton) {
     client.buttonHandlers.set('crash', commandModule.handleCrashButton);
+  }
+  if (commandModule.handleAuctionButton) {
+    client.buttonHandlers.set('auction', commandModule.handleAuctionButton);
   }
 }
 
@@ -126,6 +134,20 @@ client.on('interactionCreate', async interaction => {
           await handler(interaction);
         } catch (error) {
           console.error('Crash button error:', error);
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: 'Chyba při zpracování tlačítka.', ephemeral: true });
+          }
+        }
+      }
+    }
+    // Button handler pro aukce
+    else if (interaction.customId.startsWith('auction_')) {
+      const handler = client.buttonHandlers.get('auction');
+      if (handler) {
+        try {
+          await handler(interaction, db);
+        } catch (error) {
+          console.error('Auction button error:', error);
           if (!interaction.replied && !interaction.deferred) {
             await interaction.reply({ content: 'Chyba při zpracování tlačítka.', ephemeral: true });
           }
