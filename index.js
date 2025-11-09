@@ -53,8 +53,9 @@ client.once('ready', async () => {
   try {
     console.log('Registering slash commands...');
     
+    // Globální registrace - funguje na všech serverech, kde je bot
     await rest.put(
-      Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID),
+      Routes.applicationCommands(client.user.id),
       { body: commands }
     );
     
