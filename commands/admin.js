@@ -5,7 +5,7 @@ const ADMIN_USER_IDS = ['1436690629949263964'];
 
 // Seznam moderátor User IDs (omezená práva - max 50000 Kč)
 const MODERATOR_USER_IDS = [
-  // '123456789', // Přidej User ID moderátora sem
+  '1404534814857494708', // Moderátor
 ];
 
 export default {
