@@ -9,7 +9,6 @@ export default {
     const userId = interaction.user.id;
 
     try {
-      // Kontrola existence uživatele
       const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
 
       if (!user) {
@@ -19,28 +18,34 @@ export default {
         });
       }
 
-      // Generování náhodného výdělku
-      const moneyEarned = Math.floor(Math.random() * 191) + 10; // 10 - 200
-      const xpEarned = Math.floor(Math.random() * 10) + 1; // 1 - 10
+      const jobs = [
+        { name: 'Pracoval jsi jako programátor', pay: [150, 300] },
+        { name: 'Dělal jsi doručovatele pizzy', pay: [80, 150] },
+        { name: 'Úklid v kanceláři', pay: [50, 120] },
+        { name: 'Hlídal jsi děti', pay: [100, 200] },
+        { name: 'Pracoval jsi na stavbě', pay: [120, 250] },
+        { name: 'Servíroval jsi v restauraci', pay: [90, 180] }
+      ];
+
+      const job = jobs[Math.floor(Math.random() * jobs.length)];
+      const moneyEarned = Math.floor(Math.random() * (job.pay[1] - job.pay[0])) + job.pay[0];
+      const xpEarned = Math.floor(Math.random() * 10) + 1;
 
       let newXp = user.xp + xpEarned;
       let newMoney = user.money + moneyEarned;
       let newLevel = user.level;
       let leveledUp = false;
 
-      // Kontrola levelování
       if (newXp >= 100) {
         newLevel++;
         newXp = 0;
         leveledUp = true;
       }
 
-      // Aktualizace databáze
       db.prepare('UPDATE users SET money = ?, xp = ?, level = ? WHERE id = ?')
         .run(newMoney, newXp, newLevel, userId);
 
-      // Odpověď
-      let response = `💼 Pracoval jsi a vydělal **${moneyEarned} Kč** a **${xpEarned} XP**!`;
+      let response = `💼 **${job.name}**\nVydělal jsi **${moneyEarned} Kč** a **${xpEarned} XP**!`;
       
       if (leveledUp) {
         response += `\n\n🎉 **LEVEL UP!** Nyní jsi level **${newLevel}**!`;
