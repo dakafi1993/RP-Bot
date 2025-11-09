@@ -37,39 +37,106 @@ export default {
         if (user.level >= r.level) rank = r;
       }
 
-      // Rasové info
-      const raceInfo = {
-        human: '👤 Člověk',
-        elf: '🧝 Elf',
-        mage: '🧙 Mág',
-        warrior: '⚔️ Válečník',
-        thief: '🦹 Zloděj'
+      // Rasové info s emoji a bonusy
+      const raceData = {
+        human: { emoji: '👤', name: 'Člověk', bonus: 'Žádné bonusy' },
+        elf: { emoji: '🧝', name: 'Elf', bonus: '+20% výdělek z práce' },
+        mage: { emoji: '🧙', name: 'Mág', bonus: '+50% získané XP' },
+        warrior: { emoji: '⚔️', name: 'Válečník', bonus: '+30% úspěšnost zločinů' },
+        thief: { emoji: '🗡️', name: 'Zloděj', bonus: '+20% úspěšnost krádeží' }
       };
+
+      const race = raceData[user.race] || raceData.human;
+
+      // Výpočet celkové hodnoty kovů
+      const oreValues = {
+        iron: user.iron * 50,
+        copper: user.copper * 100,
+        gold: user.gold * 500,
+        diamond: user.diamond * 2000
+      };
+      const totalOreValue = oreValues.iron + oreValues.copper + oreValues.gold + oreValues.diamond;
+      const totalWealth = user.money + totalOreValue;
+
+      // Progress bar pro XP
+      const xpProgress = Math.floor((user.xp / 100) * 10);
+      const xpBar = '█'.repeat(xpProgress) + '░'.repeat(10 - xpProgress);
 
       const embed = new EmbedBuilder()
         .setColor(rank.color)
-        .setTitle(`${rank.name}`)
-        .setAuthor({ name: `${user.name || interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+        .setTitle(`╔══════════════════════╗`)
+        .setDescription(`**${rank.name} • ${user.name || interaction.user.username}**`)
+        .setAuthor({ 
+          name: interaction.user.username, 
+          iconURL: interaction.user.displayAvatarURL() 
+        })
         .setThumbnail(interaction.user.displayAvatarURL())
         .addFields(
-          { name: '🎭 Rasa', value: raceInfo[user.race] || '👤 Člověk', inline: true },
-          { name: '💰 Peníze', value: `${user.money} Kč`, inline: true },
-          { name: '⭐ Level', value: `${user.level}`, inline: true },
-          { name: '📊 XP', value: `${user.xp}/100`, inline: true },
-          { name: '🎮 Výhry', value: `${user.wins}`, inline: true },
-          { name: '💔 Prohry', value: `${user.losses}`, inline: true },
-          { name: '📈 Win Rate', value: `${winRate}%`, inline: true }
+          { 
+            name: '━━━━━━━ 📊 STATISTIKY ━━━━━━━',
+            value: 
+              `${race.emoji} **Rasa:** ${race.name}\n` +
+              `💡 **Bonus:** ${race.bonus}\n` +
+              `⭐ **Level:** ${user.level} | � **XP:** ${user.xp}/100\n` +
+              `${xpBar} \`${user.xp}%\``,
+            inline: false 
+          },
+          { 
+            name: '━━━━━━━ 💰 EKONOMIKA ━━━━━━━',
+            value: 
+              `💵 **Hotovost:** ${user.money.toLocaleString()} Kč\n` +
+              `⛏️ **Kovy:** ${totalOreValue.toLocaleString()} Kč\n` +
+              `💎 **Celkem:** ${totalWealth.toLocaleString()} Kč`,
+            inline: false 
+          },
+          {
+            name: '⚙️ Železo',
+            value: `${user.iron}x\n(${oreValues.iron} Kč)`,
+            inline: true
+          },
+          {
+            name: '� Měď',
+            value: `${user.copper}x\n(${oreValues.copper} Kč)`,
+            inline: true
+          },
+          {
+            name: '🟡 Zlato',
+            value: `${user.gold}x\n(${oreValues.gold} Kč)`,
+            inline: true
+          },
+          {
+            name: '� Diamant',
+            value: `${user.diamond}x\n(${oreValues.diamond} Kč)`,
+            inline: true
+          },
+          { 
+            name: '━━━━━━━ 🎮 HERNÍ STATISTIKY ━━━━━━━',
+            value: 
+              `✅ **Výhry:** ${user.wins} | ❌ **Prohry:** ${user.losses}\n` +
+              `📈 **Win Rate:** ${winRate}% | 🎯 **Celkem her:** ${totalGames}`,
+            inline: false 
+          }
         )
         .setTimestamp()
-        .setFooter({ text: 'RP Bot System' });
+        .setFooter({ text: '╚══════════════════════╝' });
 
-      // Přidání info o upgradech
+      // Přidání info o aktivních upgradech
       const now = Date.now();
       if (user.work_boost > now || user.rob_protection > now) {
         let upgrades = [];
-        if (user.work_boost > now) upgrades.push('🔧 Work Boost');
-        if (user.rob_protection > now) upgrades.push('🛡️ Rob Protection');
-        embed.addFields({ name: '🎁 Aktivní upgrady', value: upgrades.join('\n'), inline: false });
+        if (user.work_boost > now) {
+          const timeLeft = Math.ceil((user.work_boost - now) / (1000 * 60 * 60 * 24));
+          upgrades.push(`🔧 Work Boost (${timeLeft}d)`);
+        }
+        if (user.rob_protection > now) {
+          const timeLeft = Math.ceil((user.rob_protection - now) / (1000 * 60 * 60 * 24));
+          upgrades.push(`🛡️ Rob Protection (${timeLeft}d)`);
+        }
+        embed.addFields({ 
+          name: '━━━━━━━ 🎁 AKTIVNÍ UPGRADY ━━━━━━━', 
+          value: upgrades.join('\n'), 
+          inline: false 
+        });
       }
 
       await interaction.reply({ 
