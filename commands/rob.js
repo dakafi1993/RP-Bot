@@ -46,6 +46,14 @@ export default {
         });
       }
 
+      // Kontrola rob protection
+      if (victim.rob_protection > Date.now()) {
+        return interaction.reply({
+          content: `🛡️ ${target.username} má aktivní ochranu před okradením!`,
+          ephemeral: false
+        });
+      }
+
       if (victim.money < 50) {
         return interaction.reply({
           content: `❌ ${target.username} je příliš chudý na okradení!`,

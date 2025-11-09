@@ -28,7 +28,15 @@ export default {
       ];
 
       const job = jobs[Math.floor(Math.random() * jobs.length)];
-      const moneyEarned = Math.floor(Math.random() * (job.pay[1] - job.pay[0])) + job.pay[0];
+      let moneyEarned = Math.floor(Math.random() * (job.pay[1] - job.pay[0])) + job.pay[0];
+      
+      // Kontrola work boost
+      let boostActive = false;
+      if (user.work_boost > Date.now()) {
+        moneyEarned *= 2;
+        boostActive = true;
+      }
+      
       const xpEarned = Math.floor(Math.random() * 10) + 1;
 
       let newXp = user.xp + xpEarned;
@@ -46,6 +54,10 @@ export default {
         .run(newMoney, newXp, newLevel, userId);
 
       let response = `💼 **${job.name}**\nVydělal jsi **${moneyEarned} Kč** a **${xpEarned} XP**!`;
+      
+      if (boostActive) {
+        response += ` 🔧`;
+      }
       
       if (leveledUp) {
         response += `\n\n🎉 **LEVEL UP!** Nyní jsi level **${newLevel}**!`;

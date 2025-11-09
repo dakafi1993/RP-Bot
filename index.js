@@ -23,7 +23,11 @@ db.exec(`
     money INTEGER DEFAULT 0,
     xp INTEGER DEFAULT 0,
     level INTEGER DEFAULT 1,
-    last_daily INTEGER DEFAULT 0
+    last_daily INTEGER DEFAULT 0,
+    work_boost INTEGER DEFAULT 0,
+    rob_protection INTEGER DEFAULT 0,
+    wins INTEGER DEFAULT 0,
+    losses INTEGER DEFAULT 0
   )
 `);
 
@@ -66,22 +70,34 @@ client.once('ready', async () => {
 });
 
 client.on('interactionCreate', async interaction => {
-  if (!interaction.isChatInputCommand()) return;
+  if (interaction.isChatInputCommand()) {
+    const command = client.commands.get(interaction.commandName);
+    if (!command) return;
 
-  const command = client.commands.get(interaction.commandName);
-  if (!command) return;
-
-  try {
-    await command.execute(interaction, db);
-  } catch (error) {
-    console.error('Command error:', error);
-    
-    const reply = { content: 'Při provádění příkazu došlo k chybě.', ephemeral: true };
-    
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(reply);
-    } else {
-      await interaction.reply(reply);
+    try {
+      await command.execute(interaction, db);
+    } catch (error) {
+      console.error('Command error:', error);
+      
+      const reply = { content: 'Při provádění příkazu došlo k chybě.', ephemeral: true };
+      
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(reply);
+      } else {
+        await interaction.reply(reply);
+      }
+    }
+  } else if (interaction.isButton()) {
+    // Button handler pro blackjack
+    if (interaction.customId.startsWith('bj_')) {
+      const blackjackCommand = client.commands.get('blackjack');
+      if (blackjackCommand && blackjackCommand.handleBlackjackButton) {
+        try {
+          await blackjackCommand.handleBlackjackButton(interaction);
+        } catch (error) {
+          console.error('Button error:', error);
+        }
+      }
     }
   }
 });
