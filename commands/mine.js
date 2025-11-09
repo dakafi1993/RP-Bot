@@ -92,7 +92,19 @@ export default {
       await msg.edit({ embeds: [embed] });
     } catch (error) {
       console.error('Mine command error:', error);
-      throw error;
+      console.error('Error details:', error.message);
+      console.error('Stack:', error.stack);
+      
+      const errorReply = { 
+        content: `❌ Chyba při těžení: ${error.message}`, 
+        ephemeral: true 
+      };
+      
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(errorReply);
+      } else {
+        await interaction.reply(errorReply);
+      }
     }
   }
 };
