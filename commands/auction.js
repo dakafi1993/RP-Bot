@@ -20,6 +20,12 @@ export default {
               { name: '⚔️ Vybavení', value: 'equipment' }
             )
         )
+        .addIntegerOption(option =>
+          option.setName('price')
+            .setDescription('Cena (za kus u kovů, celková u vybavení)')
+            .setRequired(true)
+            .setMinValue(10)
+        )
         .addStringOption(option =>
           option.setName('ore')
             .setDescription('Který kov? (pouze pro typ "Kovy")')
@@ -47,12 +53,6 @@ export default {
             .setDescription('Kolik kusů? (pouze pro kovy)')
             .setRequired(false)
             .setMinValue(1)
-        )
-        .addIntegerOption(option =>
-          option.setName('price')
-            .setDescription('Cena (za kus u kovů, celková u vybavení)')
-            .setRequired(true)
-            .setMinValue(10)
         )
     )
     .addSubcommand(subcommand =>
