@@ -1,0 +1,13 @@
+{
+  "name": "rp-bot",
+  "version": "1.0.0",
+  "description": "Discord Roleplay Bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "better-sqlite3": "^9.2.2"
+  }
+}
