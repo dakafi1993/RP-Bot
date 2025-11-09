@@ -88,14 +88,17 @@ Každá říše má své dostupné hry - čím vyšší level, tím více her!
   - Sázka min 100 Kč
   - Vítěz bere vše (2x sázka)
   - Bojuje se s vybavenými zbraněmi/brněním
+  - **Bojové karty:** Avatary hráčů, real-time HP bary, animované útoky
   - **Detailní statistiky:** Jména hráčů, damage přijatý, durability ztracená
   - **Durability:** Vybavení se opotřebovává podle přijatého damage
 - `/expedition` - PvE výprava proti příšerám
-  - Příšery podle říše (Goblin → Cyborg)
+  - Příšery podle říše (Goblin 👹 → Alien 👽)
+  - **Bojové karty:** Obrázky příšer, real-time HP tracking
+  - **Real-time XP:** Vidíš XP jak se přičítá během boje!
   - Odměna: Peníze + XP + Auto realm progression
   - Prohra: -10% peněz
   - **Durability:** Vybavení se opotřebovává v boji
-  - **Statistiky:** Zobrazuje damage, durability loss, XP získané
+  - **Animace:** Kolo-po-kole útoky s vizuálním feedbackem
 
 ## 🌍 Říše & Progrese
 Hráči **automaticky** postupují říšemi podle levelu:
