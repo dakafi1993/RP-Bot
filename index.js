@@ -39,7 +39,8 @@ await db.query(`
     iron INTEGER DEFAULT 0,
     copper INTEGER DEFAULT 0,
     gold INTEGER DEFAULT 0,
-    diamond INTEGER DEFAULT 0
+    diamond INTEGER DEFAULT 0,
+    pickaxe TEXT DEFAULT 'wooden'
   )
 `);
 
@@ -68,6 +69,12 @@ for (const file of commandFiles) {
   }
   if (commandModule.handleAuctionButton) {
     client.buttonHandlers.set('auction', commandModule.handleAuctionButton);
+  }
+  if (commandModule.handleSellButton) {
+    client.buttonHandlers.set('sell', commandModule.handleSellButton);
+  }
+  if (commandModule.handleUpgradeButton) {
+    client.buttonHandlers.set('upgrade', commandModule.handleUpgradeButton);
   }
 }
 
@@ -161,6 +168,34 @@ client.on('interactionCreate', async interaction => {
           await handler(interaction, db);
         } catch (error) {
           console.error('Auction button error:', error);
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: 'Chyba při zpracování tlačítka.', ephemeral: true });
+          }
+        }
+      }
+    }
+    // Button handler pro sell
+    else if (interaction.customId.startsWith('sell_')) {
+      const handler = client.buttonHandlers.get('sell');
+      if (handler) {
+        try {
+          await handler(interaction, db);
+        } catch (error) {
+          console.error('Sell button error:', error);
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: 'Chyba při zpracování tlačítka.', ephemeral: true });
+          }
+        }
+      }
+    }
+    // Button handler pro upgrade
+    else if (interaction.customId === 'upgrade_pickaxe') {
+      const handler = client.buttonHandlers.get('upgrade');
+      if (handler) {
+        try {
+          await handler(interaction, db);
+        } catch (error) {
+          console.error('Upgrade button error:', error);
           if (!interaction.replied && !interaction.deferred) {
             await interaction.reply({ content: 'Chyba při zpracování tlačítka.', ephemeral: true });
           }

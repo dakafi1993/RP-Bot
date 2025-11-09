@@ -62,13 +62,17 @@ Při vytváření postavy vyber rasu:
 - `/shop item:rob_protection` - Ochrana před /rob (5 dní) - 3000 Kč
 
 ## ⛏️ Mining & Tržiště
-- `/mine` - Těž kovy (náhodné dropy)
-  - ⚙️ **Železo** - 50% šance (50 Kč/ks)
-  - 🟠 **Měď** - 30% šance (100 Kč/ks)
-  - 🟡 **Zlato** - 15% šance (500 Kč/ks)
-  - 💎 **Diamant** - 5% šance (2000 Kč/ks)
+- `/mine` - Těž kovy (závisí na krumpáči)
+  - 🪵 **Dřevěný krumpáč** (výchozí): 80% Železo, 20% Měď
+  - ⚙️ **Železný krumpáč** (5000 Kč): 50% Železo, 30% Měď, 20% Zlato
+  - � **Diamantový krumpáč** (50000 Kč): 30% Železo, 30% Měď, 30% Zlato, 10% Diamant
+- `/upgrade` - Vylepši krumpáč pro lepší rudy
 - `/inventory` - Zobraz své kovy a celkovou hodnotu
 - `/sell ore:[typ] amount:[počet]` - Prodej kovy do NPC shopu za fixní ceny
+  - ⚙️ Železo: 50 Kč/ks
+  - 🟠 Měď: 100 Kč/ks
+  - 🟡 Zlato: 500 Kč/ks
+  - 💎 Diamant: 2000 Kč/ks
 - `/auction create ore:[typ] amount:[počet] price:[cena/ks]` - Vytvoř aukci pro hráče
 - `/auction list` - Zobraz aktivní aukce hráčů
   - 💰 Tlačítko "Koupit" - Automatická transakce mezi hráči

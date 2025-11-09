@@ -48,6 +48,15 @@ export default {
 
       const race = raceData[user.race] || raceData.human;
 
+      // Krumpáč info
+      const pickaxeData = {
+        wooden: { emoji: '🪵', name: 'Dřevěný krumpáč', tier: 'I' },
+        iron: { emoji: '⚙️', name: 'Železný krumpáč', tier: 'II' },
+        diamond: { emoji: '💎', name: 'Diamantový krumpáč', tier: 'III' }
+      };
+
+      const pickaxe = pickaxeData[user.pickaxe || 'wooden'];
+
       // Výpočet celkové hodnoty kovů
       const oreValues = {
         iron: user.iron * 50,
@@ -87,6 +96,13 @@ export default {
               `💵 **Hotovost:** ${user.money.toLocaleString()} Kč\n` +
               `⛏️ **Kovy:** ${totalOreValue.toLocaleString()} Kč\n` +
               `💎 **Celkem:** ${totalWealth.toLocaleString()} Kč`,
+            inline: false 
+          },
+          { 
+            name: '━━━━━━━ 🛠️ VYBAVENÍ ━━━━━━━',
+            value: 
+              `${pickaxe.emoji} **${pickaxe.name}** (Tier ${pickaxe.tier})\n` +
+              `💡 *Použij \`/upgrade\` pro vylepšení*`,
             inline: false 
           },
           {

@@ -19,7 +19,8 @@ async function fixDatabase() {
       ADD COLUMN IF NOT EXISTS iron INTEGER DEFAULT 0,
       ADD COLUMN IF NOT EXISTS copper INTEGER DEFAULT 0,
       ADD COLUMN IF NOT EXISTS gold INTEGER DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS diamond INTEGER DEFAULT 0
+      ADD COLUMN IF NOT EXISTS diamond INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS pickaxe TEXT DEFAULT 'wooden'
     `);
     
     console.log('✅ Database columns added/verified!');
