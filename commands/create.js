@@ -20,7 +20,7 @@ export default {
       }
 
       // Vytvoření nové postavy
-      db.prepare('INSERT INTO users (id, money, xp, level, last_daily) VALUES (?, 0, 0, 1, 0)')
+      db.prepare('INSERT INTO users (id, money, xp, level, last_daily, work_boost, rob_protection, wins, losses) VALUES (?, 0, 0, 1, 0, 0, 0, 0, 0)')
         .run(userId);
 
       await interaction.reply({

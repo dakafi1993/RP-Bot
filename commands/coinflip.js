@@ -1,0 +1,94 @@
+import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
+
+const games = new Map();
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('coinflip')
+    .setDescription('Hoď mincí - Hlava nebo orel?')
+    .addIntegerOption(option =>
+      option.setName('bet')
+        .setDescription('Kolik chceš vsadit?')
+        .setRequired(true)
+        .setMinValue(100)
+    )
+    .addStringOption(option =>
+      option.setName('choice')
+        .setDescription('Hlava nebo orel?')
+        .setRequired(true)
+        .addChoices(
+          { name: '👑 Hlava', value: 'heads' },
+          { name: '🦅 Orel', value: 'tails' }
+        )
+    ),
+  
+  async execute(interaction, db) {
+    const userId = interaction.user.id;
+    const bet = interaction.options.getInteger('bet');
+    const choice = interaction.options.getString('choice');
+
+    try {
+      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+
+      if (!user) {
+        return interaction.reply({ 
+          content: 'Ještě nemáš postavu! Použij `/create` pro vytvoření.', 
+          ephemeral: false 
+        });
+      }
+
+      if (user.money < bet) {
+        return interaction.reply({
+          content: `❌ Nemáš dost peněz! Máš jen **${user.money} Kč**.`,
+          ephemeral: false
+        });
+      }
+
+      // Hod mincí
+      const result = Math.random() < 0.5 ? 'heads' : 'tails';
+      const won = result === choice;
+
+      const resultEmoji = result === 'heads' ? '👑' : '🦅';
+      const resultText = result === 'heads' ? 'Hlava' : 'Orel';
+
+      let newMoney = user.money;
+
+      if (won) {
+        newMoney += bet;
+        db.prepare('UPDATE users SET money = ?, wins = wins + 1 WHERE id = ?')
+          .run(newMoney, userId);
+
+        const embed = new EmbedBuilder()
+          .setColor(0x2ECC71)
+          .setTitle('🪙 Coinflip - VÝHRA!')
+          .setDescription(`Padlo: **${resultEmoji} ${resultText}**`)
+          .addFields(
+            { name: '💰 Výhra', value: `+${bet} Kč`, inline: true },
+            { name: '💳 Nový zůstatek', value: `${newMoney} Kč`, inline: true }
+          )
+          .setTimestamp();
+
+        return interaction.reply({ embeds: [embed], ephemeral: false });
+      } else {
+        newMoney -= bet;
+        db.prepare('UPDATE users SET money = ?, losses = losses + 1 WHERE id = ?')
+          .run(newMoney, userId);
+
+        const embed = new EmbedBuilder()
+          .setColor(0xE74C3C)
+          .setTitle('🪙 Coinflip - Prohra')
+          .setDescription(`Padlo: **${resultEmoji} ${resultText}**`)
+          .addFields(
+            { name: '💸 Ztráta', value: `-${bet} Kč`, inline: true },
+            { name: '💳 Nový zůstatek', value: `${newMoney} Kč`, inline: true }
+          )
+          .setTimestamp();
+
+        return interaction.reply({ embeds: [embed], ephemeral: false });
+      }
+    } catch (error) {
+      console.error('Coinflip command error:', error);
+      throw error;
+    }
+  }
+};

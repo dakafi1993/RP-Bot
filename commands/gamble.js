@@ -3,12 +3,12 @@ import { SlashCommandBuilder } from 'discord.js';
 export default {
   data: new SlashCommandBuilder()
     .setName('gamble')
-    .setDescription('Vsaď peníze v kasinu')
+    .setDescription('Vsaď peníze v kasinu (roulette)')
     .addIntegerOption(option =>
       option.setName('amount')
         .setDescription('Kolik chceš vsadit?')
         .setRequired(true)
-        .setMinValue(10)
+        .setMinValue(50)
     ),
   
   async execute(interaction, db) {
