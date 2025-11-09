@@ -1,5 +1,9 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 
+// Admin a Moderátor ID pro badge
+const ADMIN_USER_IDS = ['1436690629949263964'];
+const MODERATOR_USER_IDS = ['1404534814857494708', '1436690629949263964'];
+
 export default {
   data: new SlashCommandBuilder()
     .setName('profile')
@@ -71,10 +75,20 @@ export default {
       const xpProgress = Math.floor((user.xp / 100) * 10);
       const xpBar = '█'.repeat(xpProgress) + '░'.repeat(10 - xpProgress);
 
+      // Admin/Moderátor badge
+      const isAdmin = ADMIN_USER_IDS.includes(userId);
+      const isModerator = MODERATOR_USER_IDS.includes(userId);
+      let statusBadge = '';
+      if (isAdmin) {
+        statusBadge = '\n👑 **STATUS:** Admin';
+      } else if (isModerator) {
+        statusBadge = '\n🛡️ **STATUS:** Moderátor';
+      }
+
       const embed = new EmbedBuilder()
         .setColor(rank.color)
         .setTitle(`╔══════════════════════╗`)
-        .setDescription(`**${rank.name} • ${user.name || interaction.user.username}**`)
+        .setDescription(`**${rank.name} • ${user.name || interaction.user.username}**${statusBadge}`)
         .setAuthor({ 
           name: interaction.user.username, 
           iconURL: interaction.user.displayAvatarURL() 
