@@ -93,7 +93,20 @@ client.once('ready', async () => {
   }
 });
 
+const ALLOWED_CHANNEL_ID = '1436692725838774343';
+
 client.on('interactionCreate', async interaction => {
+  // Kontrola kanálu
+  if (interaction.channelId !== ALLOWED_CHANNEL_ID) {
+    if (interaction.isCommand()) {
+      return interaction.reply({
+        content: '❌ Tento bot funguje pouze v určeném kanálu!',
+        ephemeral: true
+      });
+    }
+    return;
+  }
+
   if (interaction.isChatInputCommand()) {
     const command = client.commands.get(interaction.commandName);
     if (!command) return;

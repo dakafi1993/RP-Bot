@@ -61,6 +61,18 @@ Při vytváření postavy vyber rasu:
 - `/shop item:work_boost` - 2x výdělek z /work (7 dní) - 5000 Kč
 - `/shop item:rob_protection` - Ochrana před /rob (5 dní) - 3000 Kč
 
+## ⛏️ Mining & Tržiště
+- `/mine` - Těž kovy (náhodné dropy)
+  - ⚙️ **Železo** - 50% šance (50 Kč/ks)
+  - 🟠 **Měď** - 30% šance (100 Kč/ks)
+  - 🟡 **Zlato** - 15% šance (500 Kč/ks)
+  - 💎 **Diamant** - 5% šance (2000 Kč/ks)
+- `/inventory` - Zobraz své kovy a celkovou hodnotu
+- `/sell ore:[typ] amount:[počet]` - Prodej kovy do NPC shopu za fixní ceny
+- `/auction create ore:[typ] amount:[počet] price:[cena/ks]` - Vytvoř aukci pro hráče
+- `/auction list` - Zobraz aktivní aukce hráčů
+  - 💰 Tlačítko "Koupit" - Automatická transakce mezi hráči
+
 ## 👮 Admin příkazy (User ID: 1762720768539)
 - `/admin check @user` - Zkontroluj profil hráče (vidí všechny statistiky)
 - `/admin addmoney @user amount:[částka]` - Přidej peníze hráči
