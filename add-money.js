@@ -13,7 +13,7 @@ const db = new Pool({
 async function addMoneyToOwner() {
   try {
     // Tvoje Discord User ID
-    const YOUR_USER_ID = '1762720768539';
+    const YOUR_USER_ID = '1436690629949263964';
     
     console.log('Připojuji k databázi...');
     

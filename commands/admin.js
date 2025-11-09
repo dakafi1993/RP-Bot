@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 
 // Seznam admin User IDs (můžeš přidávat další)
-const ADMIN_USER_IDS = ['1762720768539'];
+const ADMIN_USER_IDS = ['1436690629949263964'];
 
 export default {
   data: new SlashCommandBuilder()
