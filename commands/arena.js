@@ -132,7 +132,9 @@ export default {
       // Uložení výzvy
       activeChallenges.set(message.id, {
         challengerId: challenger.id,
+        challengerName: challenger.username,
         opponentId: opponent.id,
+        opponentName: opponent.username,
         bet: bet,
         challengerStats: challengerStats,
         opponentStats: opponentStats,
@@ -237,6 +239,8 @@ export async function handleArenaButton(interaction, db) {
     // Aktualizace peněz a statistik
     const winnerId = battleLog.winner;
     const loserId = winnerId === challenge.challengerId ? challenge.opponentId : challenge.challengerId;
+    const winnerName = winnerId === challenge.challengerId ? challenge.challengerName : challenge.opponentName;
+    const loserName = loserId === challenge.challengerId ? challenge.challengerName : challenge.opponentName;
 
     await db.query(
       'UPDATE users SET money = money + $1, wins = wins + 1 WHERE id = $2',
@@ -251,13 +255,49 @@ export async function handleArenaButton(interaction, db) {
     // Spotřebovat lektvary
     await db.query('UPDATE users SET potion = NULL WHERE id = $1 OR id = $2', [challenge.challengerId, challenge.opponentId]);
 
+    // Snížení durability vybavení podle damage
+    const challengerDurabilityLoss = Math.ceil(battleLog.challengerDamageTaken / 10);
+    const opponentDurabilityLoss = Math.ceil(battleLog.opponentDamageTaken / 10);
+
+    // Challenger durability
+    await db.query(`
+      UPDATE users 
+      SET 
+        weapon_durability = GREATEST(0, COALESCE(weapon_durability, 100) - $1),
+        helmet_durability = GREATEST(0, COALESCE(helmet_durability, 100) - $1),
+        armor_durability = GREATEST(0, COALESCE(armor_durability, 100) - $1),
+        boots_durability = GREATEST(0, COALESCE(boots_durability, 100) - $1)
+      WHERE id = $2
+    `, [challengerDurabilityLoss, challenge.challengerId]);
+
+    // Opponent durability
+    await db.query(`
+      UPDATE users 
+      SET 
+        weapon_durability = GREATEST(0, COALESCE(weapon_durability, 100) - $1),
+        helmet_durability = GREATEST(0, COALESCE(helmet_durability, 100) - $1),
+        armor_durability = GREATEST(0, COALESCE(armor_durability, 100) - $1),
+        boots_durability = GREATEST(0, COALESCE(boots_durability, 100) - $1)
+      WHERE id = $2
+    `, [opponentDurabilityLoss, challenge.opponentId]);
+
     const embed = new EmbedBuilder()
       .setColor(0x2ECC71)
       .setTitle('⚔️ ARÉNA - VÝSLEDEK SOUBOJE')
       .setDescription(battleLog.description)
       .addFields(
-        { name: '🏆 Vítěz', value: `<@${winnerId}>`, inline: true },
-        { name: '💰 Výhra', value: `${challenge.bet.toLocaleString()} Kč`, inline: true }
+        { name: '🏆 Vítěz', value: `**${winnerName}** <@${winnerId}>`, inline: true },
+        { name: '� Poražený', value: `**${loserName}** <@${loserId}>`, inline: true },
+        { name: '�💰 Výhra', value: `${challenge.bet.toLocaleString()} Kč`, inline: true }
+      )
+      .addFields(
+        { 
+          name: '📊 Detailní statistiky', 
+          value: 
+            `**${challenge.challengerName}:** ${battleLog.challengerDamageTaken} DMG přijato | -${challengerDurabilityLoss} durability\n` +
+            `**${challenge.opponentName}:** ${battleLog.opponentDamageTaken} DMG přijato | -${opponentDurabilityLoss} durability`,
+          inline: false 
+        }
       )
       .setFooter({ text: 'GG WP!' });
 
@@ -272,6 +312,8 @@ function simulateBattle(challenge) {
 
   let round = 0;
   let log = '';
+  let challengerDamageTaken = 0;
+  let opponentDamageTaken = 0;
 
   while (challengerHp > 0 && opponentHp > 0 && round < 20) {
     round++;
@@ -279,6 +321,7 @@ function simulateBattle(challenge) {
     // Challenger útočí
     const challengerDamage = Math.max(1, challenge.challengerStats.damage - Math.floor(challenge.opponentStats.defense / 2));
     opponentHp -= challengerDamage;
+    opponentDamageTaken += challengerDamage;
     log += `🗡️ Útok 1: ${challengerDamage} DMG (${Math.max(0, opponentHp)} HP)\n`;
 
     if (opponentHp <= 0) break;
@@ -286,6 +329,7 @@ function simulateBattle(challenge) {
     // Opponent útočí
     const opponentDamage = Math.max(1, challenge.opponentStats.damage - Math.floor(challenge.challengerStats.defense / 2));
     challengerHp -= opponentDamage;
+    challengerDamageTaken += opponentDamage;
     log += `⚔️ Útok 2: ${opponentDamage} DMG (${Math.max(0, challengerHp)} HP)\n`;
   }
 
@@ -293,6 +337,8 @@ function simulateBattle(challenge) {
 
   return {
     winner: winner,
+    challengerDamageTaken: challengerDamageTaken,
+    opponentDamageTaken: opponentDamageTaken,
     description: `**📜 Průběh souboje:**\n\`\`\`\n${log}\`\`\`\n${challengerHp > 0 ? '🏆 Hráč 1 vyhrál!' : '🏆 Hráč 2 vyhrál!'}`
   };
 }

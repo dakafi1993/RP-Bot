@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { checkRealmProgression } from '../utils/realm-progression.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -73,6 +74,9 @@ export default {
           [newMoney, newXp, newLevel, userId]
         );
 
+        // Kontrola realm progressu
+        const realmProgress = await checkRealmProgression(db, userId, newLevel, user.realm);
+
         const embed = new EmbedBuilder()
           .setColor(0x2ECC71)
           .setTitle(`${crime.emoji} Úspěch!`)
@@ -86,6 +90,14 @@ export default {
         
         if (leveledUp) {
           embed.addFields({ name: '🎉 LEVEL UP!', value: `Nyní jsi level **${newLevel}**!`, inline: false });
+        }
+
+        if (realmProgress.advanced) {
+          embed.addFields({ 
+            name: `${realmProgress.emoji} NOVÁ ŘÍŠE!`, 
+            value: `Postupuješ do **${realmProgress.name}**!`, 
+            inline: false 
+          });
         }
 
         await msg.edit({ embeds: [embed] });

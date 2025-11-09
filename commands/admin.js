@@ -89,6 +89,21 @@ export default {
     )
     .addSubcommand(subcommand =>
       subcommand
+        .setName('removexp')
+        .setDescription('Odeber hráči XP')
+        .addUserOption(option =>
+          option.setName('user')
+            .setDescription('Hráč')
+            .setRequired(true)
+        )
+        .addIntegerOption(option =>
+          option.setName('amount')
+            .setDescription('Počet XP')
+            .setRequired(true)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
         .setName('setpickaxe')
         .setDescription('Nastav hráči krumpáč')
         .addUserOption(option =>
@@ -352,6 +367,54 @@ export default {
             .addFields(
               { name: 'Hráč', value: targetUser.username, inline: true },
               { name: 'XP', value: `+${amount} XP`, inline: true },
+              { name: 'Level', value: `${user.level} → ${newLevel}`, inline: true },
+              { name: 'Nové XP', value: `${newXP}/100`, inline: true }
+            )
+            .setTimestamp();
+
+          await interaction.reply({ embeds: [embed] });
+          break;
+        }
+
+        case 'removexp': {
+          // Pouze admin může odebírat XP
+          if (!isAdmin) {
+            return interaction.reply({
+              content: '❌ Pouze admin může odebírat XP!',
+              ephemeral: true
+            });
+          }
+
+          if (!user) {
+            return interaction.reply({
+              content: `❌ ${targetUser.username} ještě nemá postavu!`,
+              ephemeral: true
+            });
+          }
+
+          let newXP = user.xp - amount;
+          let newLevel = user.level;
+
+          // Level down pokud jde XP do záporu
+          while (newXP < 0 && newLevel > 1) {
+            newXP += 100;
+            newLevel -= 1;
+          }
+
+          // Neklesne pod level 1
+          if (newLevel === 1 && newXP < 0) {
+            newXP = 0;
+          }
+
+          await db.query('UPDATE users SET xp = $1, level = $2 WHERE id = $3', [newXP, newLevel, targetUser.id]);
+
+          const embed = new EmbedBuilder()
+            .setColor(0xE74C3C)
+            .setTitle('❌ XP odebrány')
+            .setDescription(`Admin **${interaction.user.username}** odebral XP`)
+            .addFields(
+              { name: 'Hráč', value: targetUser.username, inline: true },
+              { name: 'XP', value: `-${amount} XP`, inline: true },
               { name: 'Level', value: `${user.level} → ${newLevel}`, inline: true },
               { name: 'Nové XP', value: `${newXP}/100`, inline: true }
             )

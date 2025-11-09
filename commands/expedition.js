@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { SHOP_ITEMS } from './shop.js';
+import { checkRealmProgression } from '../utils/realm-progression.js';
 
 // Příšery podle říše
 const MONSTERS = {
@@ -73,6 +74,7 @@ export default {
       let monsterHp = monster.hp;
       let battleLog = '';
       let round = 0;
+      let playerDamageTaken = 0;
 
       while (playerHp > 0 && monsterHp > 0 && round < 20) {
         round++;
@@ -87,6 +89,7 @@ export default {
         // Příšera útočí
         const monsterDamage = Math.max(1, monster.damage - Math.floor(playerStats.defense / 2));
         playerHp -= monsterDamage;
+        playerDamageTaken += monsterDamage;
         battleLog += `💥 ${monster.name}: ${monsterDamage} DMG\n`;
       }
 
@@ -104,17 +107,34 @@ export default {
 
         // Level up check
         const newXp = user.xp + xpGained;
+        let finalLevel = user.level;
         if (newXp >= 100) {
-          const newLevel = user.level + Math.floor(newXp / 100);
+          finalLevel = user.level + Math.floor(newXp / 100);
           const remainingXp = newXp % 100;
           
           await db.query(
             'UPDATE users SET level = $1, xp = $2 WHERE id = $3',
-            [newLevel, remainingXp, userId]
+            [finalLevel, remainingXp, userId]
           );
 
-          battleLog += `\n🎉 LEVEL UP! Jsi nyní level ${newLevel}!`;
+          battleLog += `\n🎉 LEVEL UP! Jsi nyní level ${finalLevel}!`;
         }
+
+        // Kontrola realm progressu
+        const realmProgress = await checkRealmProgression(db, userId, finalLevel, user.realm);
+
+        // Snížení durability vybavení podle damage
+        const durabilityLoss = Math.ceil(playerDamageTaken / 10);
+
+        await db.query(`
+          UPDATE users 
+          SET 
+            weapon_durability = GREATEST(0, COALESCE(weapon_durability, 100) - $1),
+            helmet_durability = GREATEST(0, COALESCE(helmet_durability, 100) - $1),
+            armor_durability = GREATEST(0, COALESCE(armor_durability, 100) - $1),
+            boots_durability = GREATEST(0, COALESCE(boots_durability, 100) - $1)
+          WHERE id = $2
+        `, [durabilityLoss, userId]);
 
         const embed = new EmbedBuilder()
           .setColor(0x2ECC71)
@@ -124,7 +144,9 @@ export default {
             `**📜 Průběh boje:**\n\`\`\`\n${battleLog}\`\`\`\n` +
             `💰 **Odměna:** ${reward.toLocaleString()} Kč\n` +
             `⭐ **XP:** +${xpGained}\n` +
-            `❤️ **Zbývá HP:** ${playerHp}`
+            `❤️ **Zbývá HP:** ${playerHp}\n` +
+            `📊 **Statistiky:** ${playerDamageTaken} DMG přijato | -${durabilityLoss} durability` +
+            (realmProgress.advanced ? `\n\n${realmProgress.emoji} **Postupuješ do ${realmProgress.name}!**` : '')
           )
           .setFooter({ text: 'Můžeš jít na další expedici!' });
 
@@ -133,11 +155,23 @@ export default {
       } else {
         // Prohra
         const penalty = Math.floor(user.money * 0.1); // 10% pokuta
+        const durabilityLoss = Math.ceil(playerDamageTaken / 10);
 
         await db.query(
           'UPDATE users SET money = money - $1, losses = losses + 1, potion = NULL WHERE id = $2',
           [penalty, userId]
         );
+
+        // Snížení durability i při prohře
+        await db.query(`
+          UPDATE users 
+          SET 
+            weapon_durability = GREATEST(0, COALESCE(weapon_durability, 100) - $1),
+            helmet_durability = GREATEST(0, COALESCE(helmet_durability, 100) - $1),
+            armor_durability = GREATEST(0, COALESCE(armor_durability, 100) - $1),
+            boots_durability = GREATEST(0, COALESCE(boots_durability, 100) - $1)
+          WHERE id = $2
+        `, [durabilityLoss, userId]);
 
         const embed = new EmbedBuilder()
           .setColor(0xE74C3C)
@@ -146,7 +180,8 @@ export default {
             `Byl jsi poražen **${monster.name}**!\n\n` +
             `**📜 Průběh boje:**\n\`\`\`\n${battleLog}\`\`\`\n` +
             `💸 **Pokuta:** -${penalty.toLocaleString()} Kč\n` +
-            `❤️ **Zbývá HP:** 0`
+            `❤️ **Zbývá HP:** 0\n` +
+            `📊 **Statistiky:** ${playerDamageTaken} DMG přijato | -${durabilityLoss} durability`
           )
           .setFooter({ text: 'Příště to zvládneš!' });
 

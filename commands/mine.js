@@ -19,15 +19,16 @@ export default {
         });
       }
 
-      // Kontrola cooldownu (30 minut)
+      // Kontrola cooldownu (5 minut)
       const now = Date.now();
-      const cooldownTime = 30 * 60 * 1000; // 30 minut
+      const cooldownTime = 5 * 60 * 1000; // 5 minut
       const timeLeft = user.last_mine + cooldownTime - now;
 
       if (timeLeft > 0) {
         const minutesLeft = Math.ceil(timeLeft / (1000 * 60));
+        const secondsLeft = Math.ceil((timeLeft % (1000 * 60)) / 1000);
         return interaction.reply({
-          content: `⏰ Musíš počkat ještě **${minutesLeft} minut** před další těžbou!`,
+          content: `⏰ Musíš počkat ještě **${minutesLeft}m ${secondsLeft}s** před další těžbou!`,
           ephemeral: true
         });
       }
@@ -65,6 +66,11 @@ export default {
 
       const currentPickaxe = pickaxes[user.pickaxe || 'wooden'];
 
+      // Kontrola diamant cooldownu (10 minut)
+      const diamondCooldown = 10 * 60 * 1000; // 10 minut
+      const timeSinceDiamond = now - (user.last_diamond_mine || 0);
+      const canMineDiamond = timeSinceDiamond >= diamondCooldown;
+
       // Animace těžby
       const mining = new EmbedBuilder()
         .setColor(0x95A5A6)
@@ -101,19 +107,36 @@ export default {
         oreAmount = 1;
         oreType = 'gold';
       } else {
-        foundOre = 'Diamant';
-        oreEmoji = '💎';
-        oreAmount = 1;
-        oreType = 'diamond';
+        // Diamant - kontrola 10min cooldownu
+        if (canMineDiamond) {
+          foundOre = 'Diamant';
+          oreEmoji = '💎';
+          oreAmount = 1;
+          oreType = 'diamond';
+        } else {
+          // Pokud nemůže diamant, dá zlato místo toho
+          foundOre = 'Zlato';
+          oreEmoji = '🟡';
+          oreAmount = 1;
+          oreType = 'gold';
+        }
       }
 
       // Aktualizace inventáře a durability
       const newDurability = user.pickaxe === 'wooden' ? 0 : Math.max(0, user.pickaxe_durability - 10);
       
-      await db.query(
-        `UPDATE users SET ${oreType} = ${oreType} + $1, last_mine = $2, pickaxe_durability = $3 WHERE id = $4`,
-        [oreAmount, now, newDurability, userId]
-      );
+      // Pokud je diamant, update last_diamond_mine
+      if (oreType === 'diamond') {
+        await db.query(
+          `UPDATE users SET ${oreType} = ${oreType} + $1, last_mine = $2, last_diamond_mine = $2, pickaxe_durability = $3 WHERE id = $4`,
+          [oreAmount, now, newDurability, userId]
+        );
+      } else {
+        await db.query(
+          `UPDATE users SET ${oreType} = ${oreType} + $1, last_mine = $2, pickaxe_durability = $3 WHERE id = $4`,
+          [oreAmount, now, newDurability, userId]
+        );
+      }
 
       // Získání aktuálních hodnot
       const updatedResult = await db.query('SELECT iron, copper, gold, diamond FROM users WHERE id = $1', [userId]);

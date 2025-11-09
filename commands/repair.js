@@ -1,18 +1,35 @@
-import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 
-// Ceny oprav podle typu krumpáče
+// Ceny oprav
 const REPAIR_COSTS = {
-  iron: 2000,      // Železný - 2000 Kč
-  diamond: 10000   // Diamantový - 10000 Kč
+  pickaxe: { iron: 2000, diamond: 10000, legendary: 15000 },
+  weapon: 1000,
+  helmet: 800,
+  armor: 1500,
+  boots: 600
 };
 
 export default {
   data: new SlashCommandBuilder()
     .setName('repair')
-    .setDescription('Oprav svůj krumpáč'),
+    .setDescription('Oprav svoje vybavení')
+    .addStringOption(option =>
+      option.setName('item')
+        .setDescription('Co chceš opravit')
+        .setRequired(true)
+        .addChoices(
+          { name: '⛏️ Krumpáč', value: 'pickaxe' },
+          { name: '⚔️ Zbraň', value: 'weapon' },
+          { name: '🪖 Helmu', value: 'helmet' },
+          { name: '🛡️ Brnění', value: 'armor' },
+          { name: '👢 Boty', value: 'boots' },
+          { name: '🔧 Vše', value: 'all' }
+        )
+    ),
   
   async execute(interaction, db) {
     const userId = interaction.user.id;
+    const itemType = interaction.options.getString('item');
 
     try {
       const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
@@ -25,62 +42,185 @@ export default {
         });
       }
 
-      const pickaxe = user.pickaxe || 'wooden';
-      const durability = user.pickaxe_durability || 100;
+      // Repair all items
+      if (itemType === 'all') {
+        let totalCost = 0;
+        let repairs = [];
 
-      // Dřevěný krumpáč se nedá opravit
-      if (pickaxe === 'wooden') {
-        return interaction.reply({
-          content: '❌ Dřevěný krumpáč se nedá opravit! Kup si nový v `/shop`.',
-          ephemeral: true
-        });
+        // Pickaxe
+        if (user.pickaxe && user.pickaxe !== 'wooden' && (user.pickaxe_durability || 0) < 100) {
+          const cost = REPAIR_COSTS.pickaxe[user.pickaxe] || 0;
+          totalCost += cost;
+          repairs.push(`⛏️ Krumpáč: ${cost} Kč`);
+        }
+
+        // Weapon
+        if (user.weapon && (user.weapon_durability || 0) < 100) {
+          totalCost += REPAIR_COSTS.weapon;
+          repairs.push(`⚔️ Zbraň: ${REPAIR_COSTS.weapon} Kč`);
+        }
+
+        // Helmet
+        if (user.helmet && (user.helmet_durability || 0) < 100) {
+          totalCost += REPAIR_COSTS.helmet;
+          repairs.push(`🪖 Helma: ${REPAIR_COSTS.helmet} Kč`);
+        }
+
+        // Armor
+        if (user.armor && (user.armor_durability || 0) < 100) {
+          totalCost += REPAIR_COSTS.armor;
+          repairs.push(`🛡️ Brnění: ${REPAIR_COSTS.armor} Kč`);
+        }
+
+        // Boots
+        if (user.boots && (user.boots_durability || 0) < 100) {
+          totalCost += REPAIR_COSTS.boots;
+          repairs.push(`👢 Boty: ${REPAIR_COSTS.boots} Kč`);
+        }
+
+        if (repairs.length === 0) {
+          return interaction.reply({
+            content: '✅ Veškeré tvoje vybavení je v perfektním stavu!',
+            ephemeral: true
+          });
+        }
+
+        if (user.money < totalCost) {
+          return interaction.reply({
+            content: `❌ Nemáš dostatek peněz! Celková cena opravy: ${totalCost.toLocaleString()} Kč (máš ${user.money.toLocaleString()} Kč)`,
+            ephemeral: true
+          });
+        }
+
+        await db.query(`
+          UPDATE users 
+          SET 
+            money = money - $1,
+            pickaxe_durability = CASE WHEN pickaxe IS NOT NULL AND pickaxe != 'wooden' THEN 100 ELSE pickaxe_durability END,
+            weapon_durability = CASE WHEN weapon IS NOT NULL THEN 100 ELSE weapon_durability END,
+            helmet_durability = CASE WHEN helmet IS NOT NULL THEN 100 ELSE helmet_durability END,
+            armor_durability = CASE WHEN armor IS NOT NULL THEN 100 ELSE armor_durability END,
+            boots_durability = CASE WHEN boots IS NOT NULL THEN 100 ELSE boots_durability END
+          WHERE id = $2
+        `, [totalCost, userId]);
+
+        const embed = new EmbedBuilder()
+          .setColor(0x2ECC71)
+          .setTitle('🔧 Oprava kompletní!')
+          .setDescription('Veškeré tvoje vybavení bylo opraveno!')
+          .addFields(
+            { name: 'Opraveno', value: repairs.join('\n'), inline: false },
+            { name: 'Celková cena', value: `${totalCost.toLocaleString()} Kč`, inline: true },
+            { name: 'Zbývá', value: `${(user.money - totalCost).toLocaleString()} Kč`, inline: true }
+          )
+          .setTimestamp();
+
+        return interaction.reply({ embeds: [embed] });
       }
 
-      // Kontrola zda je krumpáč rozbitý
-      if (durability === 100) {
-        return interaction.reply({
-          content: '✅ Tvůj krumpáč je v perfektním stavu! Nepotřebuje opravu.',
-          ephemeral: true
-        });
+      // Repair single item - Pickaxe
+      if (itemType === 'pickaxe') {
+        const pickaxe = user.pickaxe || 'wooden';
+        const durability = user.pickaxe_durability || 100;
+
+        if (pickaxe === 'wooden') {
+          return interaction.reply({
+            content: '❌ Dřevěný krumpáč se nedá opravit! Kup si nový v `/shop`.',
+            ephemeral: true
+          });
+        }
+
+        if (durability >= 100) {
+          return interaction.reply({
+            content: '✅ Tvůj krumpáč je v perfektním stavu!',
+            ephemeral: true
+          });
+        }
+
+        const repairCost = REPAIR_COSTS.pickaxe[pickaxe];
+        const pickaxeNames = {
+          iron: '⚙️ Železný krumpáč',
+          diamond: '💎 Diamantový krumpáč',
+          legendary: '🌟 Legendární krumpáč'
+        };
+
+        if (user.money < repairCost) {
+          return interaction.reply({
+            content: `❌ Nemáš dostatek peněz! Oprava stojí ${repairCost.toLocaleString()} Kč, ale máš pouze ${user.money.toLocaleString()} Kč.`,
+            ephemeral: true
+          });
+        }
+
+        await db.query('UPDATE users SET money = money - $1, pickaxe_durability = 100 WHERE id = $2', [repairCost, userId]);
+
+        const embed = new EmbedBuilder()
+          .setColor(0x2ECC71)
+          .setTitle('🔧 Oprava dokončena!')
+          .setDescription(`${pickaxeNames[pickaxe]} byl opraven!`)
+          .addFields(
+            { name: 'Cena', value: `${repairCost.toLocaleString()} Kč`, inline: true },
+            { name: 'Zbývá', value: `${(user.money - repairCost).toLocaleString()} Kč`, inline: true },
+            { name: 'Durability', value: `${durability}% → 100%`, inline: true }
+          )
+          .setTimestamp();
+
+        return interaction.reply({ embeds: [embed] });
       }
 
-      const repairCost = REPAIR_COSTS[pickaxe];
-      const pickaxeNames = {
-        iron: '⚙️ Železný krumpáč',
-        diamond: '💎 Diamantový krumpáč'
+      // Equipment repair
+      const equipmentConfig = {
+        weapon: { name: '⚔️ Zbraň', column: 'weapon', durabilityColumn: 'weapon_durability', cost: REPAIR_COSTS.weapon },
+        helmet: { name: '🪖 Helma', column: 'helmet', durabilityColumn: 'helmet_durability', cost: REPAIR_COSTS.helmet },
+        armor: { name: '🛡️ Brnění', column: 'armor', durabilityColumn: 'armor_durability', cost: REPAIR_COSTS.armor },
+        boots: { name: '👢 Boty', column: 'boots', durabilityColumn: 'boots_durability', cost: REPAIR_COSTS.boots }
       };
 
-      // Kontrola peněz
-      if (user.money < repairCost) {
+      const config = equipmentConfig[itemType];
+      if (!config) {
+        return interaction.reply({ content: '❌ Neplatný typ vybavení!', ephemeral: true });
+      }
+
+      const hasItem = user[config.column];
+      const durability = user[config.durabilityColumn] || 100;
+
+      if (!hasItem) {
         return interaction.reply({
-          content: `❌ Nemáš dost peněz! Oprava ${pickaxeNames[pickaxe]} stojí **${repairCost.toLocaleString()} Kč**.\nMáš pouze **${user.money.toLocaleString()} Kč**.`,
+          content: `❌ Nemáš ${config.name}!`,
           ephemeral: true
         });
       }
 
+      if (durability >= 100) {
+        return interaction.reply({
+          content: `✅ ${config.name} je v perfektním stavu!`,
+          ephemeral: true
+        });
+      }
+
+      if (user.money < config.cost) {
+        return interaction.reply({
+          content: `❌ Nemáš dostatek peněz! Oprava stojí ${config.cost.toLocaleString()} Kč, ale máš pouze ${user.money.toLocaleString()} Kč.`,
+          ephemeral: true
+        });
+      }
+
+      await db.query(
+        `UPDATE users SET money = money - $1, ${config.durabilityColumn} = 100 WHERE id = $2`,
+        [config.cost, userId]
+      );
+
       const embed = new EmbedBuilder()
-        .setColor(0xE67E22)
-        .setTitle('🔧 Oprava krumpáče')
-        .setDescription(
-          `**Krumpáč:** ${pickaxeNames[pickaxe]}\n` +
-          `**Durability:** ${durability}% → 100%\n` +
-          `**Cena:** ${repairCost.toLocaleString()} Kč`
+        .setColor(0x2ECC71)
+        .setTitle('🔧 Oprava dokončena!')
+        .setDescription(`${config.name} bylo opraveno!`)
+        .addFields(
+          { name: 'Cena', value: `${config.cost.toLocaleString()} Kč`, inline: true },
+          { name: 'Zbývá', value: `${(user.money - config.cost).toLocaleString()} Kč`, inline: true },
+          { name: 'Durability', value: `${durability}% → 100%`, inline: true }
         )
-        .setFooter({ text: 'Potvrď opravu tlačítkem' });
+        .setTimestamp();
 
-      const row = new ActionRowBuilder()
-        .addComponents(
-          new ButtonBuilder()
-            .setCustomId('repair_confirm')
-            .setLabel('✅ Opravit')
-            .setStyle(ButtonStyle.Success),
-          new ButtonBuilder()
-            .setCustomId('repair_cancel')
-            .setLabel('❌ Zrušit')
-            .setStyle(ButtonStyle.Danger)
-        );
-
-      await interaction.reply({ embeds: [embed], components: [row], ephemeral: false });
+      return interaction.reply({ embeds: [embed] });
 
     } catch (error) {
       console.error('Repair command error:', error);
@@ -88,67 +228,3 @@ export default {
     }
   }
 };
-
-// Handler pro tlačítka
-export async function handleRepairButton(interaction, db) {
-  const userId = interaction.user.id;
-
-  try {
-    const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
-    const user = result.rows[0];
-
-    if (interaction.customId === 'repair_cancel') {
-      const embed = new EmbedBuilder()
-        .setColor(0x95A5A6)
-        .setTitle('🔧 Oprava zrušena')
-        .setDescription('Tvůj krumpáč zůstává neop revený.');
-
-      await interaction.update({ embeds: [embed], components: [] });
-      return;
-    }
-
-    if (interaction.customId === 'repair_confirm') {
-      const pickaxe = user.pickaxe;
-      const repairCost = REPAIR_COSTS[pickaxe];
-
-      // Kontrola peněz znovu
-      if (user.money < repairCost) {
-        const embed = new EmbedBuilder()
-          .setColor(0xE74C3C)
-          .setTitle('❌ Oprava selhala')
-          .setDescription(`Nemáš dost peněz! Potřebuješ **${repairCost.toLocaleString()} Kč**.`);
-
-        await interaction.update({ embeds: [embed], components: [] });
-        return;
-      }
-
-      // Oprava krumpáče
-      await db.query(
-        'UPDATE users SET pickaxe_durability = 100, money = money - $1 WHERE id = $2',
-        [repairCost, userId]
-      );
-
-      const pickaxeNames = {
-        iron: '⚙️ Železný krumpáč',
-        diamond: '💎 Diamantový krumpáč'
-      };
-
-      const embed = new EmbedBuilder()
-        .setColor(0x2ECC71)
-        .setTitle('✅ Krumpáč opraven!')
-        .setDescription(
-          `**${pickaxeNames[pickaxe]}** byl úspěšně opraven!\n\n` +
-          `💰 Zaplatil jsi: **${repairCost.toLocaleString()} Kč**\n` +
-          `🔧 Durability: **100%**\n` +
-          `💵 Zbývá ti: **${(user.money - repairCost).toLocaleString()} Kč**`
-        )
-        .setFooter({ text: 'Použij /mine pro další těžbu!' });
-
-      await interaction.update({ embeds: [embed], components: [] });
-    }
-
-  } catch (error) {
-    console.error('Repair button error:', error);
-    await interaction.reply({ content: '❌ Chyba při opravě!', ephemeral: true });
-  }
-}

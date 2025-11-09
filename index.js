@@ -33,6 +33,7 @@ await db.query(`
     last_daily BIGINT DEFAULT 0,
     last_work BIGINT DEFAULT 0,
     last_mine BIGINT DEFAULT 0,
+    last_diamond_mine BIGINT DEFAULT 0,
     work_boost BIGINT DEFAULT 0,
     rob_protection BIGINT DEFAULT 0,
     wins INTEGER DEFAULT 0,
