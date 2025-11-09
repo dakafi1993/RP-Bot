@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SHOP_ITEMS } from './shop.js';
 
 // Admin a Moderátor ID pro badge
 const ADMIN_USER_IDS = ['1436690629949263964'];
@@ -85,10 +86,46 @@ export default {
         statusBadge = '\n🛡️ **STATUS:** Moderátor';
       }
 
+      // Říše systém
+      const realmData = {
+        ancient: { emoji: '🏛️', name: 'Starodávná říše', color: 0x8B4513 },
+        medieval: { emoji: '🏰', name: 'Středověká říše', color: 0x696969 },
+        renaissance: { emoji: '🎨', name: 'Renesanční říše', color: 0xDAA520 },
+        modern: { emoji: '🏙️', name: 'Moderní říše', color: 0x4682B4 },
+        futuristic: { emoji: '🚀', name: 'Futuristická říše', color: 0x9370DB }
+      };
+      
+      const realm = realmData[user.realm || 'ancient'];
+
+      // Vybavení
+      const weaponItem = user.weapon ? SHOP_ITEMS[user.weapon] : null;
+      const helmetItem = user.helmet ? SHOP_ITEMS[user.helmet] : null;
+      const armorItem = user.armor ? SHOP_ITEMS[user.armor] : null;
+      const bootsItem = user.boots ? SHOP_ITEMS[user.boots] : null;
+      const potionItem = user.potion ? SHOP_ITEMS[user.potion] : null;
+
+      let equipmentText = '';
+      equipmentText += `⚔️ **Zbraň:** ${weaponItem ? weaponItem.name : '---'}\n`;
+      equipmentText += `⛑️ **Helma:** ${helmetItem ? helmetItem.name : '---'}\n`;
+      equipmentText += `🛡️ **Brnění:** ${armorItem ? armorItem.name : '---'}\n`;
+      equipmentText += `👟 **Boty:** ${bootsItem ? bootsItem.name : '---'}\n`;
+      equipmentText += `🧪 **Lektvar:** ${potionItem ? potionItem.name : '---'}`;
+
+      // Celkové statistiky bojovníka
+      let totalDamage = 0;
+      let totalDefense = 0;
+      if (weaponItem && weaponItem.damage) totalDamage += weaponItem.damage;
+      if (helmetItem && helmetItem.defense) totalDefense += helmetItem.defense;
+      if (armorItem && armorItem.defense) totalDefense += armorItem.defense;
+      if (bootsItem && bootsItem.defense) totalDefense += bootsItem.defense;
+
       const embed = new EmbedBuilder()
-        .setColor(rank.color)
+        .setColor(realm.color)
         .setTitle(`╔══════════════════════╗`)
-        .setDescription(`**${rank.name} • ${user.name || interaction.user.username}**${statusBadge}`)
+        .setDescription(
+          `**${rank.name} • ${user.name || interaction.user.username}**${statusBadge}\n` +
+          `${realm.emoji} **${realm.name}** | Století: ${user.century || 1}`
+        )
         .setAuthor({ 
           name: interaction.user.username, 
           iconURL: interaction.user.displayAvatarURL() 
@@ -115,8 +152,16 @@ export default {
           { 
             name: '━━━━━━━ 🛠️ VYBAVENÍ ━━━━━━━',
             value: 
-              `${pickaxe.emoji} **${pickaxe.name}** (Tier ${pickaxe.tier})\n` +
-              `💡 *Použij \`/upgrade\` pro vylepšení*`,
+              `${pickaxe.emoji} **${pickaxe.name}** (${user.pickaxe_durability || 100}%)\n` +
+              `💡 *Použij \`/upgrade\` nebo \`/repair\`*`,
+            inline: false 
+          },
+          { 
+            name: '━━━━━━━ ⚔️ POSTAVA ━━━━━━━',
+            value: 
+              equipmentText + `\n\n` +
+              `💥 **Celkem DMG:** ${totalDamage}\n` +
+              `🛡️ **Celkem DEF:** ${totalDefense}`,
             inline: false 
           },
           {

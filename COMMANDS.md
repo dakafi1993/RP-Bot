@@ -57,15 +57,45 @@ Při vytváření postavy vyber rasu:
   - 🛡️ Rob Protection blokuje okradení
 
 ## 🏪 Obchod
-- `/shop` - Zobraz obchod
-- `/shop item:work_boost` - 2x výdělek z /work (7 dní) - 5000 Kč
-- `/shop item:rob_protection` - Ochrana před /rob (5 dní) - 3000 Kč
+- `/shop` - Hlavní menu obchodu
+- `/shop category:[kategorie]` - Zobraz kategorii itemů
+  - ⚔️ **Zbraně** - Meče (Dřevěný 1k, Železný 5k, Diamantový 25k)
+  - 🛡️ **Brnění & Helmy** - Ochrana (Kožené, Železné, Diamantové)
+  - 👟 **Boty** - Rychlost + obrana (600 Kč - 12k Kč)
+  - 🧪 **Lektvary** - Health, Síla, Obrana (500-1000 Kč)
+  - ⛏️ **Krumpáče** - Dřevěný krumpáč (500 Kč)
+  - ✨ **Boosters** - Work Boost (5k), Rob Protection (3k)
+- `/shop item:[klíč]` - Kup konkrétní item (např. iron_sword)
+
+## ⚔️ RPG Systém
+- `/equip slot:[slot] item:[klíč]` - Nasaď vybavení
+  - Sloty: weapon, helmet, armor, boots, potion
+- `/unequip slot:[slot]` - Sundej vybavení
+- `/arena opponent:@user bet:[částka]` - PvP souboj mezi hráči
+  - Sázka min 100 Kč
+  - Vítěz bere vše (2x sázka)
+  - Bojuje se s vybavenými zbraněmi/brněním
+- `/expedition` - PvE výprava proti příšerám
+  - Příšery podle říše (Goblin → Cyborg)
+  - Odměna: Peníze + XP
+  - Prohra: -10% peněz
+
+## 🌍 Říše & Progrese
+Hráči postupují říšemi podle levelu:
+- 🏛️ **Starodávná** (Level 1-10) - Goblini, Vlci, Skeleton
+- 🏰 **Středověká** (Level 11-20) - Rytíři, Draci, Trolli
+- 🎨 **Renesanční** (Level 21-30) - Mušketýři, Alchymisté
+- 🏙️ **Moderní** (Level 31-40) - Válečníci, Snipeři, Tanky
+- 🚀 **Futuristická** (Level 41+) - Cyborgi, AI Roboti, Aliens
 
 ## ⛏️ Mining & Tržiště
-- `/mine` - Těž kovy (závisí na krumpáči)
-  - 🪵 **Dřevěný krumpáč** (výchozí): 80% Železo, 20% Měď
-  - ⚙️ **Železný krumpáč** (5000 Kč): 50% Železo, 30% Měď, 20% Zlato
-  - � **Diamantový krumpáč** (50000 Kč): 30% Železo, 30% Měď, 30% Zlato, 10% Diamant
+- `/mine` - Těž kovy (závisí na krumpáči) **[Cooldown: 30 minut]**
+  - 🪵 **Dřevěný krumpáč** (výchozí): 70% Železo, 25% Měď, 5% Diamant (rozbije se po použití)
+  - ⚙️ **Železný krumpáč** (5000 Kč): 45% Železo, 30% Měď, 15% Zlato, 10% Diamant (durability 100%)
+  - 💎 **Diamantový krumpáč** (50000 Kč): 25% Železo, 25% Měď, 30% Zlato, 20% Diamant (durability 100%)
+- `/repair` - Oprav krumpáč (dřevěný nelze opravit)
+  - ⚙️ Železný: 2000 Kč
+  - 💎 Diamantový: 10000 Kč
 - `/upgrade` - Vylepši krumpáč pro lepší rudy
 - `/inventory` - Zobraz své kovy a celkovou hodnotu
 - `/sell ore:[typ] amount:[počet]` - Prodej kovy do NPC shopu za fixní ceny
@@ -77,13 +107,32 @@ Při vytváření postavy vyber rasu:
 - `/auction list` - Zobraz aktivní aukce hráčů
   - 💰 Tlačítko "Koupit" - Automatická transakce mezi hráči
 
-## 👮 Admin příkazy (User ID: 1762720768539)
-- `/admin check @user` - Zkontroluj profil hráče (vidí všechny statistiky)
-- `/admin addmoney @user amount:[částka]` - Přidej peníze hráči
+## � Admin příkazy (User ID: 1436690629949263964)
+
+### 💰 Správa peněz
+- `/admin addmoney @user amount:[částka]` - Přidej peníze hráči (neomezeno)
 - `/admin removemoney @user amount:[částka] reason:[důvod]` - Udělej pokutu za porušení pravidel
 - `/admin setmoney @user amount:[částka]` - Nastav přesnou částku peněz
 
-💡 **Přidání dalších adminů:** Edituj `ADMIN_USER_IDS` v `commands/admin.js`
+### ⭐ Správa XP & Vybavení
+- `/admin addxp @user amount:[xp]` - Přidej XP hráči (automatický level up při 100+)
+- `/admin setpickaxe @user pickaxe:[wooden/iron/diamond]` - Nastav krumpáč hráči
+- `/admin addores @user iron:[x] copper:[x] gold:[x] diamond:[x]` - Přidej kovy do inventáře
+- `/admin setrealm @user realm:[ancient/medieval/renaissance/modern/futuristic]` - Změň říši hráče
+
+### � Kontrola
+- `/admin check @user` - Zkontroluj profil hráče (vidí všechny statistiky + User ID)
+
+## 🛡️ Moderátor příkazy (User ID: 1404534814857494708)
+
+### Omezená oprávnění
+- `/admin addmoney @user amount:[částka]` - Max 50,000 Kč
+- `/admin removemoney @user amount:[částka] reason:[důvod]` - Nelze odebrat adminům
+- `/admin check @user` - Kontrola profilu hráče
+
+❌ **Nemůže:** setmoney, addxp, setpickaxe, addores
+
+�💡 **Přidání dalších adminů/moderátorů:** Edituj `ADMIN_USER_IDS` / `MODERATOR_USER_IDS` v `commands/admin.js`
 
 ## 📊 Statistiky
 - **XP systém**: 100 XP = Level up

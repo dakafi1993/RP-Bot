@@ -136,6 +136,28 @@ export default {
             .setDescription('Diamant')
             .setRequired(false)
         )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('setrealm')
+        .setDescription('Nastav hráči říši')
+        .addUserOption(option =>
+          option.setName('user')
+            .setDescription('Hráč')
+            .setRequired(true)
+        )
+        .addStringOption(option =>
+          option.setName('realm')
+            .setDescription('Říše')
+            .setRequired(true)
+            .addChoices(
+              { name: '🏛️ Starodávná', value: 'ancient' },
+              { name: '🏰 Středověká', value: 'medieval' },
+              { name: '🎨 Renesanční', value: 'renaissance' },
+              { name: '🏙️ Moderní', value: 'modern' },
+              { name: '🚀 Futuristická', value: 'futuristic' }
+            )
+        )
     ),
   
   async execute(interaction, db) {
@@ -424,6 +446,47 @@ export default {
             .addFields(
               { name: 'Hráč', value: targetUser.username, inline: true },
               { name: 'Kovy', value: oresText.join('\n'), inline: false }
+            )
+            .setTimestamp();
+
+          await interaction.reply({ embeds: [embed] });
+          break;
+        }
+
+        case 'setrealm': {
+          // Pouze admin může měnit říše
+          if (!isAdmin) {
+            return interaction.reply({
+              content: '❌ Pouze admin může měnit říše!',
+              ephemeral: true
+            });
+          }
+
+          if (!user) {
+            return interaction.reply({
+              content: `❌ ${targetUser.username} ještě nemá postavu!`,
+              ephemeral: true
+            });
+          }
+
+          const realm = interaction.options.getString('realm');
+          const realmNames = {
+            ancient: '🏛️ Starodávná říše',
+            medieval: '🏰 Středověká říše',
+            renaissance: '🎨 Renesanční říše',
+            modern: '🏙️ Moderní říše',
+            futuristic: '🚀 Futuristická říše'
+          };
+
+          await db.query('UPDATE users SET realm = $1 WHERE id = $2', [realm, targetUser.id]);
+
+          const embed = new EmbedBuilder()
+            .setColor(0x9B59B6)
+            .setTitle('🌍 Říše nastavena')
+            .setDescription(`Admin **${interaction.user.username}** změnil říši`)
+            .addFields(
+              { name: 'Hráč', value: targetUser.username, inline: true },
+              { name: 'Nová říše', value: realmNames[realm], inline: true }
             )
             .setTimestamp();
 

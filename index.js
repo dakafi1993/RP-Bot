@@ -32,6 +32,7 @@ await db.query(`
     level INTEGER DEFAULT 1,
     last_daily BIGINT DEFAULT 0,
     last_work BIGINT DEFAULT 0,
+    last_mine BIGINT DEFAULT 0,
     work_boost BIGINT DEFAULT 0,
     rob_protection BIGINT DEFAULT 0,
     wins INTEGER DEFAULT 0,
@@ -40,7 +41,15 @@ await db.query(`
     copper INTEGER DEFAULT 0,
     gold INTEGER DEFAULT 0,
     diamond INTEGER DEFAULT 0,
-    pickaxe TEXT DEFAULT 'wooden'
+    pickaxe TEXT DEFAULT 'wooden',
+    pickaxe_durability INTEGER DEFAULT 100,
+    weapon TEXT DEFAULT NULL,
+    helmet TEXT DEFAULT NULL,
+    armor TEXT DEFAULT NULL,
+    boots TEXT DEFAULT NULL,
+    potion TEXT DEFAULT NULL,
+    realm TEXT DEFAULT 'ancient',
+    century INTEGER DEFAULT 1
   )
 `);
 
@@ -75,6 +84,12 @@ for (const file of commandFiles) {
   }
   if (commandModule.handleUpgradeButton) {
     client.buttonHandlers.set('upgrade', commandModule.handleUpgradeButton);
+  }
+  if (commandModule.handleRepairButton) {
+    client.buttonHandlers.set('repair', commandModule.handleRepairButton);
+  }
+  if (commandModule.handleArenaButton) {
+    client.buttonHandlers.set('arena', commandModule.handleArenaButton);
   }
 }
 
@@ -196,6 +211,34 @@ client.on('interactionCreate', async interaction => {
           await handler(interaction, db);
         } catch (error) {
           console.error('Upgrade button error:', error);
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: 'Chyba při zpracování tlačítka.', ephemeral: true });
+          }
+        }
+      }
+    }
+    // Button handler pro repair
+    else if (interaction.customId.startsWith('repair_')) {
+      const handler = client.buttonHandlers.get('repair');
+      if (handler) {
+        try {
+          await handler(interaction, db);
+        } catch (error) {
+          console.error('Repair button error:', error);
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: 'Chyba při zpracování tlačítka.', ephemeral: true });
+          }
+        }
+      }
+    }
+    // Button handler pro arena
+    else if (interaction.customId.startsWith('arena_')) {
+      const handler = client.buttonHandlers.get('arena');
+      if (handler) {
+        try {
+          await handler(interaction, db);
+        } catch (error) {
+          console.error('Arena button error:', error);
           if (!interaction.replied && !interaction.deferred) {
             await interaction.reply({ content: 'Chyba při zpracování tlačítka.', ephemeral: true });
           }

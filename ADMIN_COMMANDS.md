@@ -92,6 +92,27 @@ Přidá hráči kovy do inventáře
 
 ---
 
+## 🌍 Správa říše
+
+### `/admin setrealm`
+Nastaví hráči říši
+- **Parametry:**
+  - `user` - Označený hráč
+  - `realm` - Říše (ancient/medieval/renaissance/modern/futuristic)
+- **Oprávnění:** ⚠️ **Pouze Admin**
+- **Příklad:** `/admin setrealm @User realm:medieval`
+
+**Říše:**
+| Emoji | Název | Hodnota |
+|-------|-------|---------|
+| 🏛️ | Starodávná | `ancient` |
+| 🏰 | Středověká | `medieval` |
+| 🎨 | Renesanční | `renaissance` |
+| 🏙️ | Moderní | `modern` |
+| 🚀 | Futuristická | `futuristic` |
+
+---
+
 ## 🔍 Kontrola hráčů
 
 ### `/admin check`
@@ -122,6 +143,7 @@ Zobrazí detailní informace o hráči
 | `/admin addxp` | ✅ | ❌ |
 | `/admin setpickaxe` | ✅ | ❌ |
 | `/admin addores` | ✅ | ❌ |
+| `/admin setrealm` | ✅ | ❌ |
 | `/admin check` | ✅ | ✅ |
 
 ---

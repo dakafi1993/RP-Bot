@@ -19,19 +19,47 @@ export default {
         });
       }
 
-      // Pickaxe systém
+      // Kontrola cooldownu (30 minut)
+      const now = Date.now();
+      const cooldownTime = 30 * 60 * 1000; // 30 minut
+      const timeLeft = user.last_mine + cooldownTime - now;
+
+      if (timeLeft > 0) {
+        const minutesLeft = Math.ceil(timeLeft / (1000 * 60));
+        return interaction.reply({
+          content: `⏰ Musíš počkat ještě **${minutesLeft} minut** před další těžbou!`,
+          ephemeral: true
+        });
+      }
+
+      // Kontrola durability
+      if (user.pickaxe_durability <= 0) {
+        if (user.pickaxe === 'wooden') {
+          return interaction.reply({
+            content: '💔 Tvůj dřevěný krumpáč se rozbil! Kup si nový v `/shop`.',
+            ephemeral: true
+          });
+        } else {
+          return interaction.reply({
+            content: `🔧 Tvůj krumpáč je rozbitý! Oprav ho pomocí \`/repair\`.`,
+            ephemeral: true
+          });
+        }
+      }
+
+      // Pickaxe systém s šancí na diamant
       const pickaxes = {
         wooden: {
           name: '🪵 Dřevěný krumpáč',
-          rates: { iron: 0.80, copper: 0.20, gold: 0, diamond: 0 }
+          rates: { iron: 0.70, copper: 0.25, gold: 0, diamond: 0.05 } // 5% diamant
         },
         iron: {
           name: '⚙️ Železný krumpáč',
-          rates: { iron: 0.50, copper: 0.30, gold: 0.20, diamond: 0 }
+          rates: { iron: 0.45, copper: 0.30, gold: 0.15, diamond: 0.10 } // 10% diamant
         },
         diamond: {
           name: '💎 Diamantový krumpáč',
-          rates: { iron: 0.30, copper: 0.30, gold: 0.30, diamond: 0.10 }
+          rates: { iron: 0.25, copper: 0.25, gold: 0.30, diamond: 0.20 } // 20% diamant
         }
       };
 
@@ -79,20 +107,36 @@ export default {
         oreType = 'diamond';
       }
 
-      // Aktualizace inventáře
+      // Aktualizace inventáře a durability
+      const newDurability = user.pickaxe === 'wooden' ? 0 : Math.max(0, user.pickaxe_durability - 10);
+      
       await db.query(
-        `UPDATE users SET ${oreType} = ${oreType} + $1 WHERE id = $2`,
-        [oreAmount, userId]
+        `UPDATE users SET ${oreType} = ${oreType} + $1, last_mine = $2, pickaxe_durability = $3 WHERE id = $4`,
+        [oreAmount, now, newDurability, userId]
       );
 
       // Získání aktuálních hodnot
       const updatedResult = await db.query('SELECT iron, copper, gold, diamond FROM users WHERE id = $1', [userId]);
       const inventory = updatedResult.rows[0];
 
+      // Varování pokud se krumpáč rozbit
+      let durabilityWarning = '';
+      if (user.pickaxe === 'wooden' && newDurability === 0) {
+        durabilityWarning = '\n\n💔 **Tvůj dřevěný krumpáč se rozbil!** Kup si nový v `/shop`.';
+      } else if (newDurability === 0) {
+        durabilityWarning = '\n\n🔧 **Tvůj krumpáč je rozbitý!** Oprav ho pomocí `/repair`.';
+      } else if (newDurability <= 20) {
+        durabilityWarning = `\n\n⚠️ **Tvůj krumpáč je málem rozbitý!** Zbývá ${newDurability}% durability.`;
+      }
+
       const embed = new EmbedBuilder()
         .setColor(0x2ECC71)
         .setTitle('⛏️ Těžba')
-        .setDescription(`${oreEmoji} **Našel jsi ${oreAmount}x ${foundOre}!**\n\n🛠️ **Krumpáč:** ${currentPickaxe.name}`)
+        .setDescription(
+          `${oreEmoji} **Našel jsi ${oreAmount}x ${foundOre}!**\n\n` +
+          `🛠️ **Krumpáč:** ${currentPickaxe.name}\n` +
+          `🔧 **Durability:** ${newDurability}%${durabilityWarning}`
+        )
         .addFields(
           { name: '📦 Tvůj inventář', value: 
             `⚙️ Železo: **${inventory.iron}**\n` +
@@ -102,7 +146,7 @@ export default {
             inline: false 
           }
         )
-        .setFooter({ text: 'Použij /upgrade pro lepší krumpáč | /sell pro prodej kovů' })
+        .setFooter({ text: '⏰ Další těžba za 30 minut | /repair pro opravu | /upgrade pro lepší krumpáč' })
         .setTimestamp();
 
       await msg.edit({ embeds: [embed] });
