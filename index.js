@@ -1,36 +1,49 @@
-const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
-const Database = require('better-sqlite3');
-const fs = require('fs');
-const path = require('path');
+import { Client, GatewayIntentBits, Collection, REST, Routes } from 'discord.js';
+import Database from 'better-sqlite3';
+import { config } from 'dotenv';
+import { readdirSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+config();
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
+// Inicializace databáze
 const db = new Database('database.sqlite');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
-    user_id TEXT PRIMARY KEY,
-    character_name TEXT,
+    id TEXT PRIMARY KEY,
     money INTEGER DEFAULT 0,
     xp INTEGER DEFAULT 0,
-    level INTEGER DEFAULT 1
+    level INTEGER DEFAULT 1,
+    last_daily INTEGER DEFAULT 0
   )
 `);
 
+console.log('Database initialized');
+
+// Načtení příkazů
 client.commands = new Collection();
 const commands = [];
 
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+const commandsPath = join(__dirname, 'commands');
+const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
 for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file);
-  const command = require(filePath);
-  client.commands.set(command.data.name, command);
-  commands.push(command.data.toJSON());
+  const filePath = join(commandsPath, file);
+  const command = await import(`file://${filePath}`);
+  client.commands.set(command.default.data.name, command.default);
+  commands.push(command.default.data.toJSON());
 }
+
+console.log(`Loaded ${commands.length} commands`);
 
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
@@ -39,13 +52,15 @@ client.once('ready', async () => {
   
   try {
     console.log('Registering slash commands...');
+    
     await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
+      Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID),
       { body: commands }
     );
-    console.log('Slash commands registered successfully.');
+    
+    console.log('Slash commands registered successfully');
   } catch (error) {
-    console.error(error);
+    console.error('Error registering commands:', error);
   }
 });
 
@@ -58,8 +73,15 @@ client.on('interactionCreate', async interaction => {
   try {
     await command.execute(interaction, db);
   } catch (error) {
-    console.error(error);
-    await interaction.reply({ content: 'There was an error executing this command.', ephemeral: true });
+    console.error('Command error:', error);
+    
+    const reply = { content: 'Při provádění příkazu došlo k chybě.', ephemeral: true };
+    
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp(reply);
+    } else {
+      await interaction.reply(reply);
+    }
   }
 });
 

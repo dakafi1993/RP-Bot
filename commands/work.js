@@ -1,40 +1,58 @@
-const { SlashCommandBuilder } = require('discord.js');
+import { SlashCommandBuilder } from 'discord.js';
 
-module.exports = {
+export default {
   data: new SlashCommandBuilder()
     .setName('work')
-    .setDescription('Work to earn money and XP'),
+    .setDescription('Pracuj a vyděláj peníze a XP'),
+  
   async execute(interaction, db) {
     const userId = interaction.user.id;
 
-    const user = db.prepare('SELECT * FROM users WHERE user_id = ?').get(userId);
+    try {
+      // Kontrola existence uživatele
+      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
 
-    if (!user) {
-      return interaction.reply({ content: 'You don\'t have a character yet! Use `/create` to make one.', ephemeral: true });
+      if (!user) {
+        return interaction.reply({ 
+          content: 'Ještě nemáš postavu! Použij `/create` pro vytvoření.', 
+          ephemeral: false 
+        });
+      }
+
+      // Generování náhodného výdělku
+      const moneyEarned = Math.floor(Math.random() * 191) + 10; // 10 - 200
+      const xpEarned = Math.floor(Math.random() * 10) + 1; // 1 - 10
+
+      let newXp = user.xp + xpEarned;
+      let newMoney = user.money + moneyEarned;
+      let newLevel = user.level;
+      let leveledUp = false;
+
+      // Kontrola levelování
+      if (newXp >= 100) {
+        newLevel++;
+        newXp = 0;
+        leveledUp = true;
+      }
+
+      // Aktualizace databáze
+      db.prepare('UPDATE users SET money = ?, xp = ?, level = ? WHERE id = ?')
+        .run(newMoney, newXp, newLevel, userId);
+
+      // Odpověď
+      let response = `💼 Pracoval jsi a vydělal **${moneyEarned} Kč** a **${xpEarned} XP**!`;
+      
+      if (leveledUp) {
+        response += `\n\n🎉 **LEVEL UP!** Nyní jsi level **${newLevel}**!`;
+      }
+
+      await interaction.reply({
+        content: response,
+        ephemeral: false
+      });
+    } catch (error) {
+      console.error('Work command error:', error);
+      throw error;
     }
-
-    const moneyEarned = Math.floor(Math.random() * 100) + 50;
-    const xpEarned = Math.floor(Math.random() * 20) + 10;
-
-    const newXp = user.xp + xpEarned;
-    const newMoney = user.money + moneyEarned;
-    
-    let newLevel = user.level;
-    const xpNeeded = user.level * 100;
-    
-    if (newXp >= xpNeeded) {
-      newLevel++;
-    }
-
-    db.prepare('UPDATE users SET money = ?, xp = ?, level = ? WHERE user_id = ?')
-      .run(newMoney, newXp, newLevel, userId);
-
-    let response = `You worked and earned **$${moneyEarned}** and **${xpEarned} XP**!`;
-    
-    if (newLevel > user.level) {
-      response += `\n🎉 You leveled up to level **${newLevel}**!`;
-    }
-
-    await interaction.reply(response);
   }
 };

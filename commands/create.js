@@ -1,27 +1,35 @@
-const { SlashCommandBuilder } = require('discord.js');
+import { SlashCommandBuilder } from 'discord.js';
 
-module.exports = {
+export default {
   data: new SlashCommandBuilder()
     .setName('create')
-    .setDescription('Create a new character')
-    .addStringOption(option =>
-      option.setName('name')
-        .setDescription('Your character name')
-        .setRequired(true)
-    ),
+    .setDescription('Vytvoř si postavu v RP světě'),
+  
   async execute(interaction, db) {
-    const characterName = interaction.options.getString('name');
     const userId = interaction.user.id;
 
-    const existing = db.prepare('SELECT * FROM users WHERE user_id = ?').get(userId);
+    try {
+      // Kontrola existence uživatele
+      const existing = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
 
-    if (existing) {
-      return interaction.reply({ content: 'You already have a character!', ephemeral: true });
+      if (existing) {
+        return interaction.reply({ 
+          content: 'Už máš postavu!', 
+          ephemeral: false 
+        });
+      }
+
+      // Vytvoření nové postavy
+      db.prepare('INSERT INTO users (id, money, xp, level, last_daily) VALUES (?, 0, 0, 1, 0)')
+        .run(userId);
+
+      await interaction.reply({
+        content: `✅ Postava pro ${interaction.user.username} byla úspěšně vytvořena!`,
+        ephemeral: false
+      });
+    } catch (error) {
+      console.error('Create command error:', error);
+      throw error;
     }
-
-    db.prepare('INSERT INTO users (user_id, character_name, money, xp, level) VALUES (?, ?, 0, 0, 1)')
-      .run(userId, characterName);
-
-    await interaction.reply(`Character **${characterName}** created successfully!`);
   }
 };

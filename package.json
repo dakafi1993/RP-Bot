@@ -1,13 +1,15 @@
 {
   "name": "rp-bot",
   "version": "1.0.0",
+  "type": "module",
   "description": "Discord Roleplay Bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "discord.js": "^14.14.1",
-    "better-sqlite3": "^9.2.2"
+    "discord.js": "^14.24.2",
+    "dotenv": "^17.2.3",
+    "better-sqlite3": "^9.0.0"
   }
 }
