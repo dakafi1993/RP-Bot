@@ -61,6 +61,14 @@ Při vytváření postavy vyber rasu:
 - `/shop item:work_boost` - 2x výdělek z /work (7 dní) - 5000 Kč
 - `/shop item:rob_protection` - Ochrana před /rob (5 dní) - 3000 Kč
 
+## 👮 Admin příkazy (User ID: 1762720768539)
+- `/admin check @user` - Zkontroluj profil hráče (vidí všechny statistiky)
+- `/admin addmoney @user amount:[částka]` - Přidej peníze hráči
+- `/admin removemoney @user amount:[částka] reason:[důvod]` - Udělej pokutu za porušení pravidel
+- `/admin setmoney @user amount:[částka]` - Nastav přesnou částku peněz
+
+💡 **Přidání dalších adminů:** Edituj `ADMIN_USER_IDS` v `commands/admin.js`
+
 ## 📊 Statistiky
 - **XP systém**: 100 XP = Level up
 - **Win/Loss**: Sleduje výhry a prohry v hrách

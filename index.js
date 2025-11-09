@@ -42,6 +42,7 @@ console.log('Database initialized');
 
 // Načtení příkazů
 client.commands = new Collection();
+client.buttonHandlers = new Collection();
 const commands = [];
 
 const commandsPath = join(__dirname, 'commands');
@@ -49,9 +50,17 @@ const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js
 
 for (const file of commandFiles) {
   const filePath = join(commandsPath, file);
-  const command = await import(`file://${filePath}`);
-  client.commands.set(command.default.data.name, command.default);
-  commands.push(command.default.data.toJSON());
+  const commandModule = await import(`file://${filePath}`);
+  client.commands.set(commandModule.default.data.name, commandModule.default);
+  commands.push(commandModule.default.data.toJSON());
+  
+  // Uložení button handlerů pokud existují
+  if (commandModule.handleBlackjackButton) {
+    client.buttonHandlers.set('blackjack', commandModule.handleBlackjackButton);
+  }
+  if (commandModule.handleCrashButton) {
+    client.buttonHandlers.set('crash', commandModule.handleCrashButton);
+  }
 }
 
 console.log(`Loaded ${commands.length} commands`);
@@ -97,23 +106,29 @@ client.on('interactionCreate', async interaction => {
   } else if (interaction.isButton()) {
     // Button handler pro blackjack
     if (interaction.customId.startsWith('bj_')) {
-      const blackjackCommand = client.commands.get('blackjack');
-      if (blackjackCommand && blackjackCommand.handleBlackjackButton) {
+      const handler = client.buttonHandlers.get('blackjack');
+      if (handler) {
         try {
-          await blackjackCommand.handleBlackjackButton(interaction);
+          await handler(interaction);
         } catch (error) {
-          console.error('Button error:', error);
+          console.error('Blackjack button error:', error);
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: 'Chyba při zpracování tlačítka.', ephemeral: true });
+          }
         }
       }
     }
     // Button handler pro crash
     else if (interaction.customId.startsWith('crash_')) {
-      const crashCommand = client.commands.get('crash');
-      if (crashCommand && crashCommand.handleCrashButton) {
+      const handler = client.buttonHandlers.get('crash');
+      if (handler) {
         try {
-          await crashCommand.handleCrashButton(interaction);
+          await handler(interaction);
         } catch (error) {
-          console.error('Button error:', error);
+          console.error('Crash button error:', error);
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: 'Chyba při zpracování tlačítka.', ephemeral: true });
+          }
         }
       }
     }
