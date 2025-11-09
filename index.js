@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits, Collection, REST, Routes } from 'discord.js';
-import Database from 'better-sqlite3';
+import pkg from 'pg';
+const { Pool } = pkg;
 import { config } from 'dotenv';
 import { readdirSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -14,18 +15,24 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// Inicializace databáze
-const db = new Database('database.sqlite');
+// Inicializace PostgreSQL
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
-db.exec(`
+// Vytvoření tabulky
+await db.query(`
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
+    name TEXT,
+    race TEXT,
     money INTEGER DEFAULT 0,
     xp INTEGER DEFAULT 0,
     level INTEGER DEFAULT 1,
-    last_daily INTEGER DEFAULT 0,
-    work_boost INTEGER DEFAULT 0,
-    rob_protection INTEGER DEFAULT 0,
+    last_daily BIGINT DEFAULT 0,
+    work_boost BIGINT DEFAULT 0,
+    rob_protection BIGINT DEFAULT 0,
     wins INTEGER DEFAULT 0,
     losses INTEGER DEFAULT 0
   )
